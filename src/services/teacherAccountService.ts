@@ -35,6 +35,10 @@ function toLoginEmail(loginId: string): string {
   return `${toBase64Url(loginId)}@${LOGIN_DOMAIN}`;
 }
 
+function toLoginIndexKey(loginId: string): string {
+  return toBase64Url(loginId);
+}
+
 export async function createTeacherAccount(
   payload: CreateTeacherAccountRequest
 ): Promise<User> {
@@ -89,6 +93,13 @@ export async function createTeacherAccount(
   };
 
   await setDoc(doc(db, 'users', firebaseUser.uid), teacherData);
+  await setDoc(doc(db, 'loginIndex', toLoginIndexKey(loginId)), {
+    email,
+    loginId,
+    uid: firebaseUser.uid,
+    churchId: payload.churchId,
+    createdAt: new Date(),
+  });
 
   return teacherData;
 }

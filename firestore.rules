@@ -13,6 +13,16 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    // 로그인 인덱스 컬렉션 (로그인 전 이름 -> 이메일 매핑용)
+    match /loginIndex/{loginKey} {
+      // 로그인 화면에서 문서 단건 조회(get)만 허용
+      allow get: if true;
+      // 목록 조회는 금지
+      allow list: if false;
+      // 생성/수정은 인증 사용자만 가능
+      allow create, update, delete: if isAuthenticated();
+    }
+
     // 교회 컬렉션
     match /churches/{churchId} {
       allow read, write: if isAuthenticated();

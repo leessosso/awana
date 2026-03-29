@@ -35,12 +35,40 @@ function toBase64Url(input: string): string {
   return input;
 }
 
+function toLoginIndexKey(loginInput: string): string {
+  const normalized = loginInput.trim().normalize('NFC').toLowerCase()
+  return toBase64Url(normalized)
+}
+
 function toLoginEmail(loginInput: string): string {
   const normalized = loginInput.trim().normalize('NFC').toLowerCase();
   if (normalized.includes('@')) {
     return normalized;
   }
   return `${toBase64Url(normalized)}@${LOGIN_DOMAIN}`;
+}
+
+async function resolveLoginEmail(loginInput: string): Promise<string> {
+  const normalized = loginInput.trim().normalize('NFC').toLowerCase()
+  if (normalized.includes('@')) {
+    return normalized
+  }
+
+  if (!db) {
+    return toLoginEmail(loginInput)
+  }
+
+  const loginIndexDoc = await getDoc(doc(db, 'loginIndex', toLoginIndexKey(normalized)))
+  if (!loginIndexDoc.exists()) {
+    return toLoginEmail(loginInput)
+  }
+
+  const data = loginIndexDoc.data() as { email?: string }
+  if (!data.email) {
+    return toLoginEmail(loginInput)
+  }
+
+  return data.email
 }
 
 export async function signUp(
@@ -119,7 +147,7 @@ export async function signIn(email: string, password: string): Promise<User> {
         authConfig: auth?.config,
       });
 
-      const loginEmail = toLoginEmail(email);
+      const loginEmail = await resolveLoginEmail(email);
 
       const userCredential = await signInWithEmailAndPassword(
         auth,
