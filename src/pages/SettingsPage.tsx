@@ -66,8 +66,8 @@ export default function SettingsPage() {
       return;
     }
 
-    if (!/^[a-z0-9._-]{3,30}$/i.test(loginId.trim())) {
-      setError('아이디는 영문/숫자/._- 조합으로 3~30자여야 합니다.');
+    if (!/^[a-z0-9가-힣._-]{2,30}$/i.test(loginId.trim())) {
+      setError('아이디는 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.');
       return;
     }
 

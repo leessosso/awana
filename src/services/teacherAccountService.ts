@@ -17,13 +17,18 @@ interface CreateTeacherAccountRequest {
 
 const LOGIN_DOMAIN = 'awana.local';
 const SECONDARY_APP_NAME = 'teacher-account-manager';
-
-function toLoginEmail(loginId: string): string {
-  return `${loginId}@${LOGIN_DOMAIN}`;
-}
+const LOGIN_ID_PATTERN = /^[a-z0-9가-힣._-]{2,30}$/i;
 
 function normalizeLoginId(loginId: string): string {
   return loginId.trim().toLowerCase();
+}
+
+function generateTeacherEmail(churchId: string): string {
+  const churchKey = churchId.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase() || 'church';
+  const randomKey = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+    : `${Date.now()}${Math.floor(Math.random() * 100000)}`;
+  return `teacher-${churchKey}-${randomKey}@${LOGIN_DOMAIN}`;
 }
 
 export async function createTeacherAccount(
@@ -34,8 +39,8 @@ export async function createTeacherAccount(
   }
 
   const loginId = normalizeLoginId(payload.loginId);
-  if (!/^[a-z0-9._-]{3,30}$/i.test(loginId)) {
-    throw new Error('아이디는 영문/숫자/._- 조합으로 3~30자여야 합니다.');
+  if (!LOGIN_ID_PATTERN.test(loginId)) {
+    throw new Error('아이디는 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.');
   }
 
   if (payload.password.trim().length < 6) {
@@ -44,7 +49,6 @@ export async function createTeacherAccount(
 
   const duplicateQuery = query(
     collection(db, 'users'),
-    where('churchId', '==', payload.churchId),
     where('loginId', '==', loginId),
     limit(1)
   );
@@ -58,7 +62,7 @@ export async function createTeacherAccount(
     initializeApp(app.options, SECONDARY_APP_NAME);
   const secondaryAuth = getAuth(secondaryApp);
 
-  const email = toLoginEmail(loginId);
+  const email = generateTeacherEmail(payload.churchId);
   const userCredential = await createUserWithEmailAndPassword(
     secondaryAuth,
     email,
