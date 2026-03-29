@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { ThemeSelector } from '../components/ui/ThemeSelector';
 import { Button } from '../components/ui/Button';
@@ -19,6 +19,7 @@ import type { User } from '../models/User';
 import { TeacherPosition } from '../models/User';
 import { TEACHER_POSITIONS, getPositionLabel } from '../constants/teacherPositions';
 import { canManageUsers } from '../utils/permissions';
+import { normalizeLoginInput } from '../utils/loginIdentity';
 
 const INITIAL_TEACHER_PASSWORD = '123456';
 
@@ -41,8 +42,9 @@ export default function SettingsPage() {
 
   const isUserManager = canManageUsers(user);
   const canRenderTeacherSettings = isUserManager && !!user?.churchId;
+  const previewLoginId = normalizeLoginInput(displayName);
 
-  const loadTeachers = async () => {
+  const loadTeachers = useCallback(async () => {
     if (!user?.churchId || !canRenderTeacherSettings) {
       return;
     }
@@ -56,11 +58,11 @@ export default function SettingsPage() {
     } finally {
       setIsLoadingTeachers(false);
     }
-  };
+  }, [canRenderTeacherSettings, user?.churchId]);
 
   useEffect(() => {
     void loadTeachers();
-  }, [user?.churchId, canRenderTeacherSettings]);
+  }, [loadTeachers]);
 
   const handleCreateTeacher = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -87,13 +89,12 @@ export default function SettingsPage() {
         password: INITIAL_TEACHER_PASSWORD,
         churchId: currentUser.churchId,
         churchName: currentUser.churchName,
-        createdBy: currentUser.uid,
         position,
       });
       setDisplayName('');
       setPosition(TeacherPosition.ASSISTANT);
       setSuccessMessage(
-        `${createdTeacher.displayName} 선생님 계정을 생성했습니다. 초기 비밀번호는 ${INITIAL_TEACHER_PASSWORD} 입니다.`
+        `${createdTeacher.displayName} 선생님 계정을 생성했습니다. 로그인 아이디는 ${createdTeacher.loginId}이고, 초기 비밀번호는 ${INITIAL_TEACHER_PASSWORD} 입니다.`
       );
       await loadTeachers();
     } catch (createError) {
@@ -222,20 +223,23 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>선생님 계정 등록</CardTitle>
               <CardDescription>
-                이름을 입력하면 이름이 로그인 아이디가 되고, 초기 비밀번호는 고정값으로 설정됩니다.
+                이름을 입력하면 로그인 아이디가 자동으로 생성되고, 초기 비밀번호는 고정값으로 설정됩니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreateTeacher}>
-                <Input
-                  placeholder="선생님 이름 (동명이인은 A/B/C 포함)"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  required
-                  disabled={isCreating}
-                />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">선생님 이름</label>
+                  <Input
+                    placeholder="선생님 이름 (동명이인은 A/B/C 포함)"
+                    value={displayName}
+                    onChange={(event) => setDisplayName(event.target.value)}
+                    required
+                    disabled={isCreating}
+                  />
+                </div>
                 <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                  로그인 아이디: 이름과 동일하게 자동 설정됩니다.
+                  로그인 아이디: {previewLoginId || '이름 입력 후 자동 생성'}
                 </div>
                 <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
                   초기 비밀번호: {INITIAL_TEACHER_PASSWORD}
@@ -259,6 +263,9 @@ export default function SettingsPage() {
                   <Button type="submit" disabled={isCreating}>
                     {isCreating ? '생성 중...' : '선생님 계정 생성'}
                   </Button>
+                </div>
+                <div className="md:col-span-2 rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                  생성 후 안내: 1) 이름(로그인 아이디)과 초기 비밀번호 전달 2) 첫 로그인 후 설정에서 비밀번호 변경 안내
                 </div>
               </form>
             </CardContent>
@@ -301,7 +308,7 @@ export default function SettingsPage() {
                       <div>
                         <p className="font-medium">{teacher.displayName}</p>
                         <p className="text-sm text-muted-foreground">
-                          아이디: {teacher.loginId || teacher.email}
+                          로그인 아이디: {teacher.loginId || teacher.email}
                         </p>
                       </div>
                       <p className="text-sm text-muted-foreground">

@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import type { User, Theme, ThemeColor } from '../models/User';
+import { UserRole } from '../models/User';
 
 export class UserService {
   async getTeachersByChurch(churchId: string): Promise<User[]> {
@@ -20,7 +21,7 @@ export class UserService {
       const q = query(
         collection(db, 'users'),
         where('churchId', '==', churchId),
-        where('role', '==', 'teacher')
+        where('role', '==', UserRole.TEACHER)
       );
 
       const querySnapshot = await getDocs(q);

@@ -27,8 +27,12 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    const normalizedLoginId = loginId.trim();
+    if (!normalizedLoginId) {
+      return;
+    }
     try {
-      await signIn(loginId, password);
+      await signIn(normalizedLoginId, password);
       // 리다이렉트는 useEffect에서 처리됨
     } catch {
       // 에러는 store에서 처리됨
@@ -40,24 +44,34 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl">AWANA LMS</CardTitle>
-          <CardDescription>로그인하여 시작하세요</CardDescription>
+          <CardDescription>선생님은 이름, 관리자는 이메일로 로그인하세요</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
+            <Alert>
+              <AlertDescription className="text-sm">
+                선생님 신규 계정은 <span className="font-medium">초기 비밀번호 123456</span>으로 로그인한 뒤,
+                설정에서 바로 비밀번호를 변경해주세요.
+              </AlertDescription>
+            </Alert>
+
             <div className="space-y-2">
               <label htmlFor="loginId" className="text-sm font-medium">
-                이름
+                로그인 아이디
               </label>
               <Input
                 id="loginId"
                 type="text"
-                placeholder="이름을 입력하세요 (예: 김민수A)"
+                placeholder="선생님 이름 또는 이메일"
                 value={loginId}
                 onChange={(e) => setLoginId(e.target.value)}
                 disabled={isLoading}
                 required
                 autoFocus
               />
+              <p className="text-xs text-muted-foreground">
+                선생님 계정은 등록된 이름으로 로그인합니다.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -106,7 +120,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || !loginId || !password}
+              disabled={isLoading || !loginId.trim() || !password}
             >
               {isLoading ? '로그인 중...' : '로그인'}
             </Button>
@@ -119,6 +133,23 @@ export default function LoginPage() {
                 계정이 없으신가요? 회원가입
               </Link>
             </div>
+
+            <p className="text-center text-xs text-muted-foreground">
+              로그인 문제가 있으면 관리자에게 이름 표기(예: 김민수A)와 초기 비밀번호를 확인하세요.
+            </p>
+
+            <details className="rounded-md border px-3 py-2 text-sm">
+              <summary className="cursor-pointer font-medium">
+                자주 묻는 로그인 오류
+              </summary>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                <li>이름 앞뒤 공백은 자동 제거됩니다.</li>
+                <li>동명이인은 등록된 이름 그대로 입력하세요. (예: 김민수A)</li>
+                <li>초기 비밀번호는 123456입니다.</li>
+                <li>로그인 후 설정에서 비밀번호를 변경하세요.</li>
+                <li>실패 시 관리자에게 이름 표기 확인을 요청하세요.</li>
+              </ul>
+            </details>
           </form>
         </CardContent>
       </Card>

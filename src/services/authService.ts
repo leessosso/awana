@@ -14,8 +14,12 @@ import { UserRole } from '../models/User';
 import type { User } from '../models/User';
 import { churchService } from './churchService';
 import { logger } from '../utils/logger';
-
-const LOGIN_DOMAIN = 'awana.local';
+import {
+  getDefaultLoginIdFromEmail,
+  normalizeLoginInput,
+  toLoginEmail,
+  toLoginIndexKey,
+} from '../utils/loginIdentity';
 
 // Firebase 에러 타입 정의
 interface FirebaseError {
@@ -24,32 +28,19 @@ interface FirebaseError {
   customData?: Record<string, unknown>;
 }
 
-function toBase64Url(input: string): string {
-  if (typeof window !== 'undefined') {
-    const utf8 = encodeURIComponent(input).replace(
-      /%([0-9A-F]{2})/g,
-      (_, byte: string) => String.fromCharCode(Number.parseInt(byte, 16))
-    );
-    return btoa(utf8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+function toUserModel(userData: User, firebaseEmail?: string | null): User {
+  const defaultLoginId = getDefaultLoginIdFromEmail(firebaseEmail)
+  return {
+    ...userData,
+    loginId: userData.loginId || defaultLoginId,
+    createdAt: userData.createdAt instanceof Date
+      ? userData.createdAt
+      : new Date(userData.createdAt),
   }
-  return input;
-}
-
-function toLoginIndexKey(loginInput: string): string {
-  const normalized = loginInput.trim().normalize('NFC').toLowerCase()
-  return toBase64Url(normalized)
-}
-
-function toLoginEmail(loginInput: string): string {
-  const normalized = loginInput.trim().normalize('NFC').toLowerCase();
-  if (normalized.includes('@')) {
-    return normalized;
-  }
-  return `${toBase64Url(normalized)}@${LOGIN_DOMAIN}`;
 }
 
 async function resolveLoginEmail(loginInput: string): Promise<string> {
-  const normalized = loginInput.trim().normalize('NFC').toLowerCase()
+  const normalized = normalizeLoginInput(loginInput)
   if (normalized.includes('@')) {
     return normalized
   }
@@ -162,16 +153,7 @@ export async function signIn(email: string, password: string): Promise<User> {
       }
 
       const userData = userDoc.data() as User;
-      const defaultLoginId = firebaseUser.email?.endsWith(`@${LOGIN_DOMAIN}`)
-        ? firebaseUser.email.replace(`@${LOGIN_DOMAIN}`, '')
-        : undefined;
-      return {
-        ...userData,
-        loginId: userData.loginId || defaultLoginId,
-        createdAt: userData.createdAt instanceof Date
-          ? userData.createdAt
-          : new Date(userData.createdAt),
-      };
+      return toUserModel(userData, firebaseUser.email);
     } catch (error) {
       console.error('로그인 실패:', error);
 
@@ -244,16 +226,7 @@ export function onAuthStateChange(callback: (user: User | null) => void): () => 
           const userDoc = await getDoc(doc(db!, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data() as User;
-            const defaultLoginId = firebaseUser.email?.endsWith(`@${LOGIN_DOMAIN}`)
-              ? firebaseUser.email.replace(`@${LOGIN_DOMAIN}`, '')
-              : undefined;
-            const user: User = {
-              ...userData,
-              loginId: userData.loginId || defaultLoginId,
-              createdAt: userData.createdAt instanceof Date
-                ? userData.createdAt
-                : new Date(userData.createdAt),
-            };
+            const user = toUserModel(userData, firebaseUser.email)
             callback(user);
           } else {
             callback(null);
@@ -285,16 +258,7 @@ export async function getCurrentUser(): Promise<User | null> {
       }
 
       const userData = userDoc.data() as User;
-      const defaultLoginId = firebaseUser.email?.endsWith(`@${LOGIN_DOMAIN}`)
-        ? firebaseUser.email.replace(`@${LOGIN_DOMAIN}`, '')
-        : undefined;
-      return {
-        ...userData,
-        loginId: userData.loginId || defaultLoginId,
-        createdAt: userData.createdAt instanceof Date
-          ? userData.createdAt
-          : new Date(userData.createdAt),
-      };
+      return toUserModel(userData, firebaseUser.email);
     } catch (error) {
       console.error('사용자 정보 가져오기 실패:', error);
       return null;

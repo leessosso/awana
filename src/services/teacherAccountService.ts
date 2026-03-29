@@ -4,6 +4,11 @@ import { collection, getDocs, limit, query, setDoc, where, doc } from 'firebase/
 import { app, db, isFirebaseConfigured } from '../config/firebase';
 import type { TeacherPosition, User } from '../models/User';
 import { UserRole } from '../models/User';
+import {
+  normalizeLoginInput,
+  toLoginEmail,
+  toLoginIndexKey,
+} from '../utils/loginIdentity';
 
 interface CreateTeacherAccountRequest {
   displayName: string;
@@ -11,33 +16,11 @@ interface CreateTeacherAccountRequest {
   password: string;
   churchId: string;
   churchName: string;
-  createdBy: string;
   position?: TeacherPosition;
 }
 
-const LOGIN_DOMAIN = 'awana.local';
 const SECONDARY_APP_NAME = 'teacher-account-manager';
 const LOGIN_ID_PATTERN = /^[a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ._-]{2,30}$/i;
-
-function normalizeLoginId(loginId: string): string {
-  return loginId.trim().normalize('NFC').toLowerCase();
-}
-
-function toBase64Url(input: string): string {
-  const utf8 = encodeURIComponent(input).replace(
-    /%([0-9A-F]{2})/g,
-    (_, byte: string) => String.fromCharCode(Number.parseInt(byte, 16))
-  );
-  return btoa(utf8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-function toLoginEmail(loginId: string): string {
-  return `${toBase64Url(loginId)}@${LOGIN_DOMAIN}`;
-}
-
-function toLoginIndexKey(loginId: string): string {
-  return toBase64Url(loginId);
-}
 
 export async function createTeacherAccount(
   payload: CreateTeacherAccountRequest
@@ -46,7 +29,7 @@ export async function createTeacherAccount(
     throw new Error('Firebase가 설정되지 않았습니다.');
   }
 
-  const loginId = normalizeLoginId(payload.loginId);
+  const loginId = normalizeLoginInput(payload.loginId);
   if (!LOGIN_ID_PATTERN.test(loginId)) {
     throw new Error('아이디는 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.');
   }
