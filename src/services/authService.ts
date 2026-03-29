@@ -12,11 +12,21 @@ import type { User } from '../models/User';
 import { churchService } from './churchService';
 import { logger } from '../utils/logger';
 
+const LOGIN_DOMAIN = 'awana.local';
+
 // Firebase 에러 타입 정의
 interface FirebaseError {
   code?: string;
   message?: string;
   customData?: Record<string, unknown>;
+}
+
+function toLoginEmail(loginInput: string): string {
+  const normalized = loginInput.trim().toLowerCase();
+  if (normalized.includes('@')) {
+    return normalized;
+  }
+  return `${normalized}@${LOGIN_DOMAIN}`;
 }
 
 export async function signUp(
@@ -95,9 +105,11 @@ export async function signIn(email: string, password: string): Promise<User> {
         authConfig: auth?.config,
       });
 
+      const loginEmail = toLoginEmail(email);
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        email,
+        loginEmail,
         password
       );
       const firebaseUser = userCredential.user;
@@ -108,8 +120,12 @@ export async function signIn(email: string, password: string): Promise<User> {
       }
 
       const userData = userDoc.data() as User;
+      const defaultLoginId = firebaseUser.email?.endsWith(`@${LOGIN_DOMAIN}`)
+        ? firebaseUser.email.replace(`@${LOGIN_DOMAIN}`, '')
+        : undefined;
       return {
         ...userData,
+        loginId: userData.loginId || defaultLoginId,
         createdAt: userData.createdAt instanceof Date
           ? userData.createdAt
           : new Date(userData.createdAt),
@@ -164,8 +180,12 @@ export function onAuthStateChange(callback: (user: User | null) => void): () => 
           const userDoc = await getDoc(doc(db!, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data() as User;
+            const defaultLoginId = firebaseUser.email?.endsWith(`@${LOGIN_DOMAIN}`)
+              ? firebaseUser.email.replace(`@${LOGIN_DOMAIN}`, '')
+              : undefined;
             const user: User = {
               ...userData,
+              loginId: userData.loginId || defaultLoginId,
               createdAt: userData.createdAt instanceof Date
                 ? userData.createdAt
                 : new Date(userData.createdAt),
@@ -201,8 +221,12 @@ export async function getCurrentUser(): Promise<User | null> {
       }
 
       const userData = userDoc.data() as User;
+      const defaultLoginId = firebaseUser.email?.endsWith(`@${LOGIN_DOMAIN}`)
+        ? firebaseUser.email.replace(`@${LOGIN_DOMAIN}`, '')
+        : undefined;
       return {
         ...userData,
+        loginId: userData.loginId || defaultLoginId,
         createdAt: userData.createdAt instanceof Date
           ? userData.createdAt
           : new Date(userData.createdAt),

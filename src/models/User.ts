@@ -18,6 +18,7 @@ export enum TeacherPosition {
 export interface User {
   uid: string;
   email: string;
+  loginId?: string;
   displayName: string;
   role: UserRole;
   position?: TeacherPosition;  // 선생님일 경우 직책 (선택적)

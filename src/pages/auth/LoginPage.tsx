@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Alert, AlertDescription } from '../../components/ui/Alert';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export default function LoginPage() {
     e.preventDefault();
     clearError();
     try {
-      await signIn(email, password);
+      await signIn(loginId, password);
       // 리다이렉트는 useEffect에서 처리됨
     } catch {
       // 에러는 store에서 처리됨
@@ -45,15 +45,15 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                이메일
+              <label htmlFor="loginId" className="text-sm font-medium">
+                아이디(또는 이메일)
               </label>
               <Input
-                id="email"
-                type="email"
-                placeholder="이메일을 입력하세요"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="loginId"
+                type="text"
+                placeholder="아이디를 입력하세요"
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
                 disabled={isLoading}
                 required
                 autoFocus
@@ -106,7 +106,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || !email || !password}
+              disabled={isLoading || !loginId || !password}
             >
               {isLoading ? '로그인 중...' : '로그인'}
             </Button>
