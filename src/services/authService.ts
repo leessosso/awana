@@ -1,7 +1,10 @@
 import {
+  EmailAuthProvider,
   createUserWithEmailAndPassword,
+  reauthenticateWithCredential,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  updatePassword,
   updateProfile,
   onAuthStateChanged,
 } from 'firebase/auth';
@@ -200,6 +203,28 @@ export async function signOut(): Promise<void> {
       console.error('로그아웃 실패:', error);
       throw error;
     }
+}
+
+export async function updateCurrentUserPassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  if (!isFirebaseConfigured() || !auth) {
+    throw new Error('Firebase가 설정되지 않았습니다.');
+  }
+
+  const firebaseUser = auth.currentUser;
+  if (!firebaseUser || !firebaseUser.email) {
+    throw new Error('로그인 사용자 정보를 찾을 수 없습니다.');
+  }
+
+  if (newPassword.trim().length < 6) {
+    throw new Error('새 비밀번호는 6자 이상이어야 합니다.');
+  }
+
+  const credential = EmailAuthProvider.credential(firebaseUser.email, currentPassword);
+  await reauthenticateWithCredential(firebaseUser, credential);
+  await updatePassword(firebaseUser, newPassword);
 }
 
 // 인증 상태 변경 리스너

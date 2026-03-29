@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { userService } from '../services/userService';
 import { createTeacherAccount } from '../services/teacherAccountService';
+import { updateCurrentUserPassword } from '../services/authService';
 import type { User } from '../models/User';
 import { TeacherPosition } from '../models/User';
 import { TEACHER_POSITIONS, getPositionLabel } from '../constants/teacherPositions';
@@ -24,13 +25,18 @@ export default function SettingsPage() {
   const [teachers, setTeachers] = useState<User[]>([]);
   const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccessMessage, setPasswordSuccessMessage] = useState<string | null>(null);
 
   const [displayName, setDisplayName] = useState('');
   const [loginId, setLoginId] = useState('');
-  const [password, setPassword] = useState('');
   const [position, setPosition] = useState<TeacherPosition>(TeacherPosition.ASSISTANT);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const isUserManager = canManageUsers(user);
   const canRenderTeacherSettings = isUserManager && !!user?.churchId;
@@ -71,8 +77,8 @@ export default function SettingsPage() {
       return;
     }
 
-    if (password.trim().length < 6) {
-      setError('비밀번호는 6자 이상이어야 합니다.');
+    if (loginId.trim().length < 6) {
+      setError('초기 비밀번호를 아이디와 동일하게 사용하므로 아이디는 6자 이상이어야 합니다.');
       return;
     }
 
@@ -81,7 +87,7 @@ export default function SettingsPage() {
       const createdTeacher = await createTeacherAccount({
         displayName: displayName.trim(),
         loginId: loginId.trim(),
-        password: password.trim(),
+        password: loginId.trim(),
         churchId: currentUser.churchId,
         churchName: currentUser.churchName,
         createdBy: currentUser.uid,
@@ -89,14 +95,53 @@ export default function SettingsPage() {
       });
       setDisplayName('');
       setLoginId('');
-      setPassword('');
       setPosition(TeacherPosition.ASSISTANT);
-      setSuccessMessage(`${createdTeacher.displayName} 선생님 계정을 생성했습니다.`);
+      setSuccessMessage(
+        `${createdTeacher.displayName} 선생님 계정을 생성했습니다. 초기 비밀번호는 아이디와 동일합니다.`
+      );
       await loadTeachers();
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : '선생님 계정 생성에 실패했습니다.');
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleChangePassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccessMessage(null);
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      setPasswordError('모든 비밀번호 항목을 입력해주세요.');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('새 비밀번호는 6자 이상이어야 합니다.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await updateCurrentUserPassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setPasswordSuccessMessage('비밀번호가 변경되었습니다.');
+    } catch (passwordUpdateError) {
+      setPasswordError(
+        passwordUpdateError instanceof Error
+          ? passwordUpdateError.message
+          : '비밀번호 변경에 실패했습니다.'
+      );
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -121,6 +166,54 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>내 비밀번호 변경</CardTitle>
+          <CardDescription>
+            선생님은 로그인 후 언제든지 본인 비밀번호를 변경할 수 있습니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {(passwordError || passwordSuccessMessage) && (
+            <Alert variant={passwordError ? 'destructive' : 'default'}>
+              <AlertDescription>{passwordError || passwordSuccessMessage}</AlertDescription>
+            </Alert>
+          )}
+          <form className="grid gap-4 md:grid-cols-2 mt-4" onSubmit={handleChangePassword}>
+            <Input
+              type="password"
+              placeholder="현재 비밀번호"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              disabled={isChangingPassword}
+              required
+            />
+            <div />
+            <Input
+              type="password"
+              placeholder="새 비밀번호 (6자 이상)"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              disabled={isChangingPassword}
+              required
+            />
+            <Input
+              type="password"
+              placeholder="새 비밀번호 확인"
+              value={confirmNewPassword}
+              onChange={(event) => setConfirmNewPassword(event.target.value)}
+              disabled={isChangingPassword}
+              required
+            />
+            <div className="md:col-span-2">
+              <Button type="submit" variant="secondary" disabled={isChangingPassword}>
+                {isChangingPassword ? '변경 중...' : '내 비밀번호 변경'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
       {canRenderTeacherSettings && (
         <>
           {(error || successMessage) && (
@@ -133,7 +226,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>선생님 계정 등록</CardTitle>
               <CardDescription>
-                선생님 이름/아이디/비밀번호로 Firebase 로그인 계정을 생성합니다. (Spark 플랜 호환)
+                아이디를 입력하면 초기 비밀번호는 자동으로 같은 값으로 설정됩니다. (Spark 플랜 호환)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -152,14 +245,9 @@ export default function SettingsPage() {
                   required
                   disabled={isCreating}
                 />
-                <Input
-                  type="password"
-                  placeholder="초기 비밀번호 (6자 이상)"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  disabled={isCreating}
-                />
+                <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  초기 비밀번호: 아이디와 동일하게 자동 설정됩니다.
+                </div>
                 <Select
                   value={position}
                   onValueChange={(value) => setPosition(value as TeacherPosition)}
