@@ -25,7 +25,7 @@ interface FirebaseError {
 }
 
 function toLoginEmail(loginInput: string): string {
-  const normalized = loginInput.trim().toLowerCase();
+  const normalized = loginInput.trim().normalize('NFC').toLowerCase();
   if (normalized.includes('@')) {
     return normalized;
   }
@@ -33,7 +33,7 @@ function toLoginEmail(loginInput: string): string {
 }
 
 async function resolveLoginToEmail(loginInput: string): Promise<string> {
-  const normalized = loginInput.trim().toLowerCase();
+  const normalized = loginInput.trim().normalize('NFC').toLowerCase();
   if (normalized.includes('@')) {
     return normalized;
   }

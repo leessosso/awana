@@ -20,6 +20,8 @@ import { TeacherPosition } from '../models/User';
 import { TEACHER_POSITIONS, getPositionLabel } from '../constants/teacherPositions';
 import { canManageUsers } from '../utils/permissions';
 
+const INITIAL_TEACHER_PASSWORD = '123456';
+
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const [teachers, setTeachers] = useState<User[]>([]);
@@ -32,7 +34,6 @@ export default function SettingsPage() {
   const [passwordSuccessMessage, setPasswordSuccessMessage] = useState<string | null>(null);
 
   const [displayName, setDisplayName] = useState('');
-  const [loginId, setLoginId] = useState('');
   const [position, setPosition] = useState<TeacherPosition>(TeacherPosition.ASSISTANT);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -72,32 +73,27 @@ export default function SettingsPage() {
       return;
     }
 
-    if (!/^[a-z0-9가-힣._-]{2,30}$/i.test(loginId.trim())) {
-      setError('아이디는 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.');
-      return;
-    }
-
-    if (loginId.trim().length < 6) {
-      setError('초기 비밀번호를 아이디와 동일하게 사용하므로 아이디는 6자 이상이어야 합니다.');
+    const normalizedName = displayName.trim().normalize('NFC');
+    if (!/^[a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ._-]{2,30}$/i.test(normalizedName)) {
+      setError('이름(로그인 아이디)은 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.');
       return;
     }
 
     setIsCreating(true);
     try {
       const createdTeacher = await createTeacherAccount({
-        displayName: displayName.trim(),
-        loginId: loginId.trim(),
-        password: loginId.trim(),
+        displayName: normalizedName,
+        loginId: normalizedName,
+        password: INITIAL_TEACHER_PASSWORD,
         churchId: currentUser.churchId,
         churchName: currentUser.churchName,
         createdBy: currentUser.uid,
         position,
       });
       setDisplayName('');
-      setLoginId('');
       setPosition(TeacherPosition.ASSISTANT);
       setSuccessMessage(
-        `${createdTeacher.displayName} 선생님 계정을 생성했습니다. 초기 비밀번호는 아이디와 동일합니다.`
+        `${createdTeacher.displayName} 선생님 계정을 생성했습니다. 초기 비밀번호는 ${INITIAL_TEACHER_PASSWORD} 입니다.`
       );
       await loadTeachers();
     } catch (createError) {
@@ -226,27 +222,23 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>선생님 계정 등록</CardTitle>
               <CardDescription>
-                아이디를 입력하면 초기 비밀번호는 자동으로 같은 값으로 설정됩니다. (Spark 플랜 호환)
+                이름을 입력하면 이름이 로그인 아이디가 되고, 초기 비밀번호는 고정값으로 설정됩니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreateTeacher}>
                 <Input
-                  placeholder="선생님 이름"
+                  placeholder="선생님 이름 (동명이인은 A/B/C 포함)"
                   value={displayName}
                   onChange={(event) => setDisplayName(event.target.value)}
                   required
                   disabled={isCreating}
                 />
-                <Input
-                  placeholder="로그인 아이디 (예: kimjh)"
-                  value={loginId}
-                  onChange={(event) => setLoginId(event.target.value)}
-                  required
-                  disabled={isCreating}
-                />
                 <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                  초기 비밀번호: 아이디와 동일하게 자동 설정됩니다.
+                  로그인 아이디: 이름과 동일하게 자동 설정됩니다.
+                </div>
+                <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  초기 비밀번호: {INITIAL_TEACHER_PASSWORD}
                 </div>
                 <Select
                   value={position}

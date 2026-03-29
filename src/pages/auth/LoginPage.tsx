@@ -46,12 +46,12 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="loginId" className="text-sm font-medium">
-                아이디(또는 이메일)
+                이름
               </label>
               <Input
                 id="loginId"
                 type="text"
-                placeholder="아이디를 입력하세요"
+                placeholder="이름을 입력하세요 (예: 김민수A)"
                 value={loginId}
                 onChange={(e) => setLoginId(e.target.value)}
                 disabled={isLoading}

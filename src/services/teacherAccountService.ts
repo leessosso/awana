@@ -17,10 +17,10 @@ interface CreateTeacherAccountRequest {
 
 const LOGIN_DOMAIN = 'awana.local';
 const SECONDARY_APP_NAME = 'teacher-account-manager';
-const LOGIN_ID_PATTERN = /^[a-z0-9가-힣._-]{2,30}$/i;
+const LOGIN_ID_PATTERN = /^[a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ._-]{2,30}$/i;
 
 function normalizeLoginId(loginId: string): string {
-  return loginId.trim().toLowerCase();
+  return loginId.trim().normalize('NFC').toLowerCase();
 }
 
 function generateTeacherEmail(churchId: string): string {
