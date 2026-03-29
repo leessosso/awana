@@ -8,7 +8,7 @@ import {
   updateProfile,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, limit, query, setDoc, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '../config/firebase';
 import { UserRole } from '../models/User';
 import type { User } from '../models/User';
@@ -24,46 +24,23 @@ interface FirebaseError {
   customData?: Record<string, unknown>;
 }
 
+function toBase64Url(input: string): string {
+  if (typeof window !== 'undefined') {
+    const utf8 = encodeURIComponent(input).replace(
+      /%([0-9A-F]{2})/g,
+      (_, byte: string) => String.fromCharCode(Number.parseInt(byte, 16))
+    );
+    return btoa(utf8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+  return input;
+}
+
 function toLoginEmail(loginInput: string): string {
   const normalized = loginInput.trim().normalize('NFC').toLowerCase();
   if (normalized.includes('@')) {
     return normalized;
   }
-  return `${normalized}@${LOGIN_DOMAIN}`;
-}
-
-async function resolveLoginToEmail(loginInput: string): Promise<string> {
-  const normalized = loginInput.trim().normalize('NFC').toLowerCase();
-  if (normalized.includes('@')) {
-    return normalized;
-  }
-
-  if (!db) {
-    return toLoginEmail(normalized);
-  }
-
-  const q = query(
-    collection(db, 'users'),
-    where('loginId', '==', normalized),
-    limit(2)
-  );
-  const snapshot = await getDocs(q);
-
-  if (snapshot.empty) {
-    // 이전 방식과의 호환을 위해 fallback 유지
-    return toLoginEmail(normalized);
-  }
-
-  if (snapshot.size > 1) {
-    throw new Error('동일한 아이디가 중복 등록되어 있습니다. 관리자에게 문의해주세요.');
-  }
-
-  const userData = snapshot.docs[0].data() as User;
-  if (!userData.email) {
-    throw new Error('계정 이메일 정보가 누락되었습니다. 관리자에게 문의해주세요.');
-  }
-
-  return userData.email;
+  return `${toBase64Url(normalized)}@${LOGIN_DOMAIN}`;
 }
 
 export async function signUp(
@@ -142,7 +119,7 @@ export async function signIn(email: string, password: string): Promise<User> {
         authConfig: auth?.config,
       });
 
-      const loginEmail = await resolveLoginToEmail(email);
+      const loginEmail = toLoginEmail(email);
 
       const userCredential = await signInWithEmailAndPassword(
         auth,

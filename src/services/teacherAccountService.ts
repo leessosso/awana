@@ -23,12 +23,16 @@ function normalizeLoginId(loginId: string): string {
   return loginId.trim().normalize('NFC').toLowerCase();
 }
 
-function generateTeacherEmail(churchId: string): string {
-  const churchKey = churchId.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase() || 'church';
-  const randomKey = typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
-    : `${Date.now()}${Math.floor(Math.random() * 100000)}`;
-  return `teacher-${churchKey}-${randomKey}@${LOGIN_DOMAIN}`;
+function toBase64Url(input: string): string {
+  const utf8 = encodeURIComponent(input).replace(
+    /%([0-9A-F]{2})/g,
+    (_, byte: string) => String.fromCharCode(Number.parseInt(byte, 16))
+  );
+  return btoa(utf8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function toLoginEmail(loginId: string): string {
+  return `${toBase64Url(loginId)}@${LOGIN_DOMAIN}`;
 }
 
 export async function createTeacherAccount(
@@ -62,7 +66,7 @@ export async function createTeacherAccount(
     initializeApp(app.options, SECONDARY_APP_NAME);
   const secondaryAuth = getAuth(secondaryApp);
 
-  const email = generateTeacherEmail(payload.churchId);
+  const email = toLoginEmail(loginId);
   const userCredential = await createUserWithEmailAndPassword(
     secondaryAuth,
     email,
