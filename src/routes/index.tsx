@@ -16,6 +16,7 @@ import ReportsPage from '../pages/reports/ReportsPage'
 import StudentProgressReportPage from '../pages/reports/StudentProgressReportPage'
 import ChurchStatisticsPage from '../pages/reports/ChurchStatisticsPage'
 import GameTimePage from '../pages/game-time/GameTimePage'
+import GameTimeRevealPage from '../pages/game-time/GameTimeRevealPage'
 import TeamActivityScorePage from '../pages/team-activity/TeamActivityScorePage'
 import SettingsPage from '../pages/SettingsPage'
 import NotFoundPage from '../pages/NotFoundPage'
@@ -94,6 +95,10 @@ export const router = createBrowserRouter([
       {
         path: 'game-time',
         element: <GameTimePage />,
+      },
+      {
+        path: 'game-time/reveal',
+        element: <GameTimeRevealPage />,
       },
       {
         path: 'team-activity-score',
