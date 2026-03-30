@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Trash2, Calendar, Save, Edit, X } from 'lucide-react'
 import { useGameTimeStore } from '../../store/gameTimeStore'
+import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
 import { useAuthStore } from '../../store/authStore'
 import type {
   ScoreEvent,
@@ -44,6 +45,10 @@ export default function GameTimePage() {
     updateGameTimeSession,
     deleteGameTimeSession,
   } = useGameTimeStore()
+  const {
+    currentSession: teamActivitySession,
+    fetchTeamActivitySession,
+  } = useTeamActivityScoreStore()
 
   const [gameScores, setGameScores] = useState<ScoreEvent[]>([])
   const [isEditing, setIsEditing] = useState(false)
@@ -55,8 +60,15 @@ export default function GameTimePage() {
       // 프로그램이 변경되면 편집 상태 초기화
       setIsEditing(false)
       fetchGameTimeSession(date, selectedProgram)
+      fetchTeamActivitySession(date, selectedProgram)
     }
-  }, [selectedDate, selectedProgram, user?.churchId, fetchGameTimeSession])
+  }, [
+    selectedDate,
+    selectedProgram,
+    user?.churchId,
+    fetchGameTimeSession,
+    fetchTeamActivitySession,
+  ])
 
   // 세션이 로드되면 데이터 업데이트 (편집 중이 아닐 때만)
   useEffect(() => {
@@ -100,13 +112,30 @@ export default function GameTimePage() {
   }
 
   // 총점 계산
-  const getTotalScores = () => {
+  const getGameTotals = () => {
     return calculateTotalScores(gameScores, [])
+  }
+
+  const getCombinedTotals = () => {
+    const gameTotals = getGameTotals()
+    const teamActivityTotals = teamActivitySession?.totalScores || {
+      red: 0,
+      yellow: 0,
+      blue: 0,
+      green: 0,
+    }
+
+    return {
+      red: gameTotals.red + teamActivityTotals.red,
+      yellow: gameTotals.yellow + teamActivityTotals.yellow,
+      blue: gameTotals.blue + teamActivityTotals.blue,
+      green: gameTotals.green + teamActivityTotals.green,
+    }
   }
 
   // 최종 순위 계산
   const calculateRankings = () => {
-    const totals = getTotalScores()
+    const totals = getCombinedTotals()
     const sorted = Object.entries(totals)
       .map(([team, score]) => ({ team, score }))
       .sort((a, b) => b.score - a.score)
@@ -191,7 +220,14 @@ export default function GameTimePage() {
     }
   }
 
-  const totals = getTotalScores()
+  const gameTotals = getGameTotals()
+  const teamActivityTotals = teamActivitySession?.totalScores || {
+    red: 0,
+    yellow: 0,
+    blue: 0,
+    green: 0,
+  }
+  const totals = getCombinedTotals()
   const rankings = calculateRankings()
 
   return (
@@ -309,6 +345,9 @@ export default function GameTimePage() {
                       </Badge>
                     </div>
                     <div className="text-xl font-bold">{total}점</div>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      게임 {gameTotals[team]} + 팀활동 {teamActivityTotals[team]}
+                    </div>
                   </div>
                 )
               })}

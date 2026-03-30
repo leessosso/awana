@@ -27,6 +27,7 @@ const navItems = [
   { to: '/handbook', label: '핸드북' },
   { to: '/students', label: '학생 관리' },
   { to: '/game-time', label: '게임시간' },
+  { to: '/team-activity-score', label: '팀활동 점수' },
   { to: '/reports', label: '보고서' },
 ]
 

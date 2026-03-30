@@ -10,7 +10,7 @@ export interface PositionInfo {
 export const TEACHER_POSITIONS: PositionInfo[] = [
   {
     value: TeacherPosition.HEAD_TEACHER,
-    label: '수석 선생님',
+    label: '담임 선생님',
     description: '클럽 전체를 관리하고 모든 학생과 선생님들을 감독합니다.',
     permissions: [
       '학생 등록/수정/삭제',

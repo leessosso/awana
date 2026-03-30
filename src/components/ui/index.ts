@@ -77,3 +77,4 @@ export {
 } from './select';
 
 export { Checkbox } from './checkbox';
+export { CountAdjuster } from './CountAdjuster';

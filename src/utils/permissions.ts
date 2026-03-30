@@ -8,7 +8,7 @@ export enum PermissionLevel {
   NONE = 0,
   ASSISTANT = 1,    // 보조 선생님
   CLUB_LEADER = 2,  // 클럽 리더
-  HEAD_TEACHER = 3, // 수석 선생님
+  HEAD_TEACHER = 3, // 담임 선생님
   LEADER = 4,       // 교회 리더
   ADMIN = 5,        // 사이트 관리자
 }
@@ -71,7 +71,7 @@ export function isTeacher(user: User | null): boolean {
 }
 
 /**
- * 수석 선생님 권한 확인
+ * 담임 선생님 권한 확인
  */
 export function isHeadTeacher(user: User | null): boolean {
   return user?.role === UserRole.TEACHER && user?.position === TeacherPosition.HEAD_TEACHER;

@@ -2,7 +2,12 @@ import { createUserWithEmailAndPassword, getAuth, updateProfile } from 'firebase
 import { initializeApp, getApps } from 'firebase/app';
 import { collection, getDocs, limit, query, setDoc, where, doc } from 'firebase/firestore';
 import { app, db, isFirebaseConfigured } from '../config/firebase';
-import type { TeacherPosition, User } from '../models/User';
+import type {
+  TeacherPosition,
+  TeacherProgram,
+  TeacherTeam,
+  User,
+} from '../models/User';
 import { UserRole } from '../models/User';
 import {
   normalizeLoginInput,
@@ -17,6 +22,8 @@ interface CreateTeacherAccountRequest {
   churchId: string;
   churchName: string;
   position?: TeacherPosition;
+  program: TeacherProgram;
+  team: TeacherTeam;
 }
 
 const SECONDARY_APP_NAME = 'teacher-account-manager';
@@ -70,6 +77,8 @@ export async function createTeacherAccount(
     displayName: payload.displayName.trim(),
     role: UserRole.TEACHER,
     position: payload.position,
+    program: payload.program,
+    team: payload.team,
     churchId: payload.churchId,
     churchName: payload.churchName,
     createdAt: new Date(),
