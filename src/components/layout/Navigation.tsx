@@ -26,7 +26,7 @@ const navItems = [
   { to: '/attendance', label: '출석 관리' },
   { to: '/handbook', label: '핸드북' },
   { to: '/students', label: '학생 관리' },
-  { to: '/game-time', label: '게임시간' },
+  { to: '/game-time', label: '게임시간', end: true },
   { to: '/game-time/reveal', label: '점수 공개' },
   { to: '/team-activity-score', label: '팀활동 점수' },
   { to: '/reports', label: '보고서' },
@@ -67,6 +67,7 @@ export function Navigation() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={Boolean(item.end)}
                 className={({ isActive }) =>
                   [
                     'transition-colors hover:text-foreground py-2 px-3 rounded-md',
@@ -185,6 +186,7 @@ export function Navigation() {
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    end={Boolean(item.end)}
                     onClick={handleNavClick}
                     className={({ isActive }) =>
                       [

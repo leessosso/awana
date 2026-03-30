@@ -57,8 +57,7 @@ function RollingNumber ({
 }) {
   const targetDigits = Math.max(4, String(Math.max(target, 0)).length)
   const targetString = String(Math.max(target, 0)).padStart(targetDigits, '0')
-  const getMaskedValue = () =>
-    Array.from({ length: targetDigits }, () => String(Math.floor(Math.random() * 10))).join('')
+  const getMaskedValue = () => '0'.repeat(targetDigits)
 
   const [displayValue, setDisplayValue] = useState(getMaskedValue)
 
@@ -101,7 +100,6 @@ export default function GameTimeRevealPage () {
     parseProgram(searchParams.get('program'))
   )
   const [revealSeed, setRevealSeed] = useState(0)
-  const [countdown, setCountdown] = useState<number | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hasAutoStart, setHasAutoStart] = useState(false)
   const [isRankVisible, setIsRankVisible] = useState(false)
@@ -158,12 +156,14 @@ export default function GameTimeRevealPage () {
   }
 
   const rankings = calculateRankings(combinedTotals)
-  const winner = teamOrder.find((team) => rankings[team] === 1) || 'yellow'
+  const winningTeams = teamOrder.filter((team) => rankings[team] === 1)
+  const winnerScore = winningTeams.length > 0 ? combinedTotals[winningTeams[0]] : 0
+  const winnerLabel = winningTeams.map((team) => `${teamColors[team].name}팀`).join(', ')
   const isLoading = gameLoading || teamLoading
   const error = gameError || teamError
 
   const startReveal = () => {
-    setCountdown(3)
+    setRevealSeed((prev) => prev + 1)
   }
 
   const toggleFullscreen = async () => {
@@ -181,22 +181,8 @@ export default function GameTimeRevealPage () {
   useEffect(() => {
     if (isLoading || hasAutoStart) return
     setHasAutoStart(true)
-    setCountdown(3)
+    setRevealSeed((prev) => prev + 1)
   }, [isLoading, hasAutoStart])
-
-  useEffect(() => {
-    if (countdown === null) return
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown((prev) => (prev || 1) - 1), 850)
-      return () => clearTimeout(timer)
-    }
-
-    const timer = setTimeout(() => {
-      setRevealSeed((prev) => prev + 1)
-      setCountdown(null)
-    }, 350)
-    return () => clearTimeout(timer)
-  }, [countdown])
 
   useEffect(() => {
     setIsRankVisible(false)
@@ -247,18 +233,12 @@ export default function GameTimeRevealPage () {
               T&T
             </label>
           </div>
-          <Button onClick={startReveal} disabled={isLoading}>카운트다운 시작</Button>
           <Button
             variant="secondary"
-            onClick={async () => {
-              if (!document.fullscreenElement) {
-                await toggleFullscreen()
-              }
-              startReveal()
-            }}
+            onClick={startReveal}
             disabled={isLoading}
           >
-            전체화면 시작
+            점수 공개 시작
           </Button>
           <Button variant="outline" onClick={toggleFullscreen}>
             {isFullscreen ? '전체화면 종료' : '전체화면 전환'}
@@ -275,20 +255,26 @@ export default function GameTimeRevealPage () {
       <Card className="bg-black/35 border-2 border-amber-400/60">
         <CardHeader>
           <CardTitle className="text-center text-2xl text-amber-300">
-            {isRankVisible ? `1등: ${teamColors[winner].name}팀` : '순위 집계 중...'}
+            {isRankVisible
+              ? winningTeams.length > 1
+                ? `공동 우승: ${winnerLabel}`
+                : `1등: ${winnerLabel}`
+              : '순위 집계 중...'}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center">
           {isFinalVisible ? (
             <div className="font-mono text-4xl md:text-6xl font-black tracking-[0.16em] tabular-nums">
-              {String(Math.max(combinedTotals[winner], 0)).padStart(4, '0')}
+              {String(Math.max(winnerScore, 0)).padStart(4, '0')}
             </div>
           ) : (
             <div className="font-mono text-4xl md:text-6xl font-black tracking-[0.16em] tabular-nums">
-              ----
+              0000
             </div>
           )}
-          <div className="mt-2 text-sm text-slate-300">우승 점수</div>
+          <div className="mt-2 text-sm text-slate-300">
+            {winningTeams.length > 1 ? '공동 우승 점수' : '우승 점수'}
+          </div>
         </CardContent>
       </Card>
 
@@ -315,25 +301,12 @@ export default function GameTimeRevealPage () {
                   seed={revealSeed}
                   delayMs={index * TEAM_ROLL_STEP_MS}
                 />
-                <div className="mt-2 text-xs text-slate-300">
-                  게임 {gameTotals[team]} + 팀활동 {teamTotals[team]}
-                </div>
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      {countdown !== null && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center">
-          <div className="text-center">
-            <div className="mb-4 text-slate-300 text-xl">최종 점수 공개</div>
-            <div className="text-amber-300 font-black text-[7rem] md:text-[12rem] leading-none animate-pulse">
-              {countdown === 0 ? 'GO!' : countdown}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
