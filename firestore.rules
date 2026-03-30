@@ -75,5 +75,14 @@ service cloud.firestore {
     match /tntGameTimeSessions {
       allow list: if isAuthenticated();
     }
+
+    // 팀 활동 점수 컬렉션
+    match /teamActivityScores/{sessionId} {
+      allow read, write: if isAuthenticated();
+    }
+    // 팀 활동 점수 컬렉션 쿼리 허용
+    match /teamActivityScores {
+      allow list: if isAuthenticated();
+    }
   }
 }
