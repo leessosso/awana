@@ -12,6 +12,9 @@ import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
 type TeamKey = 'red' | 'yellow' | 'blue' | 'green'
 
 const teamOrder: TeamKey[] = ['yellow', 'green', 'blue', 'red']
+const TEAM_ROLL_DURATION_MS = 2100
+const TEAM_ROLL_GAP_MS = 220
+const TEAM_ROLL_STEP_MS = TEAM_ROLL_DURATION_MS + TEAM_ROLL_GAP_MS
 
 function getKoreanDateString () {
   const now = new Date()
@@ -54,11 +57,15 @@ function RollingNumber ({
 }) {
   const targetDigits = Math.max(4, String(Math.max(target, 0)).length)
   const targetString = String(Math.max(target, 0)).padStart(targetDigits, '0')
-  const [displayValue, setDisplayValue] = useState(targetString)
+  const getMaskedValue = () =>
+    Array.from({ length: targetDigits }, () => String(Math.floor(Math.random() * 10))).join('')
+
+  const [displayValue, setDisplayValue] = useState(getMaskedValue)
 
   useEffect(() => {
+    setDisplayValue(getMaskedValue())
     const startAt = Date.now() + delayMs
-    const durationMs = 2100
+    const durationMs = TEAM_ROLL_DURATION_MS
     const timer = setInterval(() => {
       const now = Date.now()
       if (now < startAt) return
@@ -97,6 +104,8 @@ export default function GameTimeRevealPage () {
   const [countdown, setCountdown] = useState<number | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hasAutoStart, setHasAutoStart] = useState(false)
+  const [isRankVisible, setIsRankVisible] = useState(false)
+  const [isFinalVisible, setIsFinalVisible] = useState(false)
 
   const {
     currentSession: gameSession,
@@ -189,6 +198,19 @@ export default function GameTimeRevealPage () {
     return () => clearTimeout(timer)
   }, [countdown])
 
+  useEffect(() => {
+    setIsRankVisible(false)
+    setIsFinalVisible(false)
+    const lastTeamDelay = (teamOrder.length - 1) * TEAM_ROLL_STEP_MS
+    const rollingDuration = TEAM_ROLL_DURATION_MS
+    const visibleAfterMs = lastTeamDelay + rollingDuration + 120
+    const timer = setTimeout(() => {
+      setIsRankVisible(true)
+      setIsFinalVisible(true)
+    }, visibleAfterMs)
+    return () => clearTimeout(timer)
+  }, [revealSeed])
+
   return (
     <div className="min-h-[calc(100vh-4rem)] rounded-xl bg-gradient-to-b from-slate-950 via-slate-900 to-black text-white p-4 md:p-8 space-y-6">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -253,11 +275,19 @@ export default function GameTimeRevealPage () {
       <Card className="bg-black/35 border-2 border-amber-400/60">
         <CardHeader>
           <CardTitle className="text-center text-2xl text-amber-300">
-            1등: {teamColors[winner].name}팀
+            {isRankVisible ? `1등: ${teamColors[winner].name}팀` : '순위 집계 중...'}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center">
-          <RollingNumber target={combinedTotals[winner]} seed={revealSeed + 100} />
+          {isFinalVisible ? (
+            <div className="font-mono text-4xl md:text-6xl font-black tracking-[0.16em] tabular-nums">
+              {String(Math.max(combinedTotals[winner], 0)).padStart(4, '0')}
+            </div>
+          ) : (
+            <div className="font-mono text-4xl md:text-6xl font-black tracking-[0.16em] tabular-nums">
+              ----
+            </div>
+          )}
           <div className="mt-2 text-sm text-slate-300">우승 점수</div>
         </CardContent>
       </Card>
@@ -271,13 +301,20 @@ export default function GameTimeRevealPage () {
                 <CardTitle className="flex items-center gap-2">
                   <span className={`h-3 w-3 rounded-full ${info.bgColor}`} />
                   {info.name}팀
-                  <Badge variant={rankings[team] === 1 ? 'default' : 'secondary'} className="ml-auto">
-                    {rankings[team]}등
+                  <Badge
+                    variant={isRankVisible && rankings[team] === 1 ? 'default' : 'secondary'}
+                    className="ml-auto"
+                  >
+                    {isRankVisible ? `${rankings[team]}등` : '공개중'}
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <RollingNumber target={combinedTotals[team]} seed={revealSeed} delayMs={index * 260} />
+                <RollingNumber
+                  target={combinedTotals[team]}
+                  seed={revealSeed}
+                  delayMs={index * TEAM_ROLL_STEP_MS}
+                />
                 <div className="mt-2 text-xs text-slate-300">
                   게임 {gameTotals[team]} + 팀활동 {teamTotals[team]}
                 </div>
