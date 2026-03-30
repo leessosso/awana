@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Trash2, Calendar, Save, Edit, X } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { useGameTimeStore } from '../../store/gameTimeStore'
 import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
 import { useAuthStore } from '../../store/authStore'
@@ -23,7 +22,6 @@ import { Alert, AlertDescription } from '../../components/ui'
 import { useToast } from '../../hooks/use-toast'
 
 export default function GameTimePage() {
-  const navigate = useNavigate()
   const { user } = useAuthStore()
   const { toast } = useToast()
 
@@ -236,16 +234,6 @@ export default function GameTimePage() {
     <div className="container mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">{selectedProgram} 게임시간 점수 관리</h1>
-        <Button
-          variant="outline"
-          onClick={() =>
-            navigate(
-              `/game-time/reveal?date=${selectedDate}&program=${encodeURIComponent(selectedProgram)}`
-            )
-          }
-        >
-          점수 공개 화면
-        </Button>
       </div>
 
       {/* 상단 고정 섹션 */}
