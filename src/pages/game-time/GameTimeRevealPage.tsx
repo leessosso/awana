@@ -63,6 +63,7 @@ function RollingNumber ({
 
   useEffect(() => {
     setDisplayValue(getMaskedValue())
+    if (seed === 0) return
     const startAt = Date.now() + delayMs
     const durationMs = TEAM_ROLL_DURATION_MS
     const timer = setInterval(() => {
@@ -101,7 +102,6 @@ export default function GameTimeRevealPage () {
   )
   const [revealSeed, setRevealSeed] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [hasAutoStart, setHasAutoStart] = useState(false)
   const [isRankVisible, setIsRankVisible] = useState(false)
   const [isFinalVisible, setIsFinalVisible] = useState(false)
 
@@ -123,7 +123,9 @@ export default function GameTimeRevealPage () {
     const date = new Date(selectedDate)
     fetchGameTimeSession(date, selectedProgram)
     fetchTeamActivitySession(date, selectedProgram)
-    setHasAutoStart(false)
+    setRevealSeed(0)
+    setIsRankVisible(false)
+    setIsFinalVisible(false)
   }, [user?.churchId, selectedDate, selectedProgram, fetchGameTimeSession, fetchTeamActivitySession])
 
   useEffect(() => {
@@ -179,12 +181,7 @@ export default function GameTimeRevealPage () {
   }
 
   useEffect(() => {
-    if (isLoading || hasAutoStart) return
-    setHasAutoStart(true)
-    setRevealSeed((prev) => prev + 1)
-  }, [isLoading, hasAutoStart])
-
-  useEffect(() => {
+    if (revealSeed === 0) return
     setIsRankVisible(false)
     setIsFinalVisible(false)
     const lastTeamDelay = (teamOrder.length - 1) * TEAM_ROLL_STEP_MS
@@ -259,7 +256,7 @@ export default function GameTimeRevealPage () {
               ? winningTeams.length > 1
                 ? `공동 우승: ${winnerLabel}`
                 : `1등: ${winnerLabel}`
-              : '순위 집계 중...'}
+              : revealSeed === 0 ? '점수 공개 대기 중' : '순위 집계 중...'}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center">
@@ -291,7 +288,7 @@ export default function GameTimeRevealPage () {
                     variant={isRankVisible && rankings[team] === 1 ? 'default' : 'secondary'}
                     className="ml-auto"
                   >
-                    {isRankVisible ? `${rankings[team]}등` : '공개중'}
+                    {isRankVisible ? `${rankings[team]}등` : revealSeed === 0 ? '대기중' : '공개중'}
                   </Badge>
                 </CardTitle>
               </CardHeader>
