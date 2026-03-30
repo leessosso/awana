@@ -195,20 +195,20 @@ export default function GameTimeRevealPage () {
   }, [revealSeed])
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] rounded-xl bg-gradient-to-b from-slate-950 via-slate-900 to-black text-white p-4 md:p-8 space-y-6">
+    <div className="min-h-[calc(100vh-4rem)] rounded-xl border bg-gradient-to-b from-background via-muted/30 to-muted/60 p-4 md:p-8 space-y-6 text-foreground dark:from-slate-950 dark:via-slate-900 dark:to-black">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black">{selectedProgram} 최종 점수 공개</h1>
-          <p className="mt-2 text-slate-300">게임시간 + 팀활동 점수 합계</p>
+          <p className="mt-2 text-muted-foreground">게임시간 + 팀활동 점수 합계</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
           <Input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-auto bg-slate-800 border-slate-700 text-white"
+            className="w-auto"
           />
-          <div className="flex items-center gap-3 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5">
+          <div className="flex items-center gap-3 rounded-md border bg-background/80 px-3 py-1.5 dark:bg-slate-900/70">
             <label className="text-sm flex items-center gap-2">
               <input
                 type="radio"
@@ -249,9 +249,9 @@ export default function GameTimeRevealPage () {
         </Alert>
       )}
 
-      <Card className="bg-black/35 border-2 border-amber-400/60">
+      <Card className="border-2 border-amber-500/70 bg-amber-50/60 dark:border-amber-400/60 dark:bg-black/35">
         <CardHeader>
-          <CardTitle className="text-center text-2xl text-amber-300">
+          <CardTitle className="text-center text-2xl text-amber-700 dark:text-amber-300">
             {isRankVisible
               ? winningTeams.length > 1
                 ? `공동 우승: ${winnerLabel}`
@@ -269,7 +269,7 @@ export default function GameTimeRevealPage () {
               0000
             </div>
           )}
-          <div className="mt-2 text-sm text-slate-300">
+          <div className="mt-2 text-sm text-muted-foreground">
             {winningTeams.length > 1 ? '공동 우승 점수' : '우승 점수'}
           </div>
         </CardContent>
@@ -279,7 +279,7 @@ export default function GameTimeRevealPage () {
         {teamOrder.map((team, index) => {
           const info = teamColors[team]
           return (
-            <Card key={team} className={`bg-black/35 border-2 ${info.borderColor}`}>
+            <Card key={team} className={`border-2 bg-background/80 dark:bg-black/35 ${info.borderColor}`}>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2">
                   <span className={`h-3 w-3 rounded-full ${info.bgColor}`} />

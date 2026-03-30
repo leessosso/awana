@@ -134,7 +134,7 @@ export default function DashboardPage() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12 bg-green-500">
-                <AvatarFallback className="bg-green-500 text-white">
+                <AvatarFallback className="bg-green-500 text-green-50">
                   <Book className="h-6 w-6" />
                 </AvatarFallback>
               </Avatar>

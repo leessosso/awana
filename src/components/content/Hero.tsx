@@ -25,12 +25,13 @@ export function Hero({
   backgroundImage,
   className = '',
 }: HeroProps) {
+  const hasBackgroundImage = Boolean(backgroundImage)
   const heroClasses = backgroundImage
     ? `relative bg-cover bg-center bg-no-repeat ${className}`
     : `bg-gradient-to-br from-blue-50 to-indigo-100 ${className}`;
 
   const overlayClasses = backgroundImage
-    ? 'absolute inset-0 bg-black bg-opacity-50'
+    ? 'absolute inset-0 bg-black/50'
     : '';
 
   return (
@@ -45,15 +46,23 @@ export function Hero({
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
         <div className="text-center">
           {badge && (
-            <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white backdrop-blur-sm mb-8">
+            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-8 ${
+              hasBackgroundImage
+                ? 'bg-white/20 text-white backdrop-blur-sm'
+                : 'bg-background/80 text-foreground border'
+            }`}>
               {badge}
             </div>
           )}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
+          <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight ${
+            hasBackgroundImage ? 'text-white' : 'text-foreground'
+          }`}>
             {title}
           </h1>
           {subtitle && (
-            <p className="text-xl sm:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+            <p className={`text-xl sm:text-2xl mb-10 max-w-3xl mx-auto leading-relaxed ${
+              hasBackgroundImage ? 'text-white/90' : 'text-muted-foreground'
+            }`}>
               {subtitle}
             </p>
           )}

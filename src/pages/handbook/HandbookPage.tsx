@@ -605,7 +605,7 @@ export default function HandbookPage() {
                           {student.name}
                         </span>
                         <CheckCircle
-                          className={`h-4 w-4 ${selectedAttendances.has(student.id) ? 'text-white' : 'text-muted-foreground'
+                          className={`h-4 w-4 ${selectedAttendances.has(student.id) ? 'text-primary-foreground' : 'text-muted-foreground'
                             }`}
                         />
                       </div>

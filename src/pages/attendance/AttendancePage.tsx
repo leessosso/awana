@@ -500,7 +500,7 @@ export default function AttendancePage() {
                 </span>
                 <CheckCircle
                   className={`h-5 w-5 ${
-                    selectedAttendances.has(student.id) ? 'text-white' : 'text-muted-foreground'
+                    selectedAttendances.has(student.id) ? 'text-primary-foreground' : 'text-muted-foreground'
                   }`}
                 />
               </div>
