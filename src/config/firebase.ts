@@ -2,26 +2,36 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const defaultFirebaseConfig = {
-  apiKey: 'AIzaSyADZ5ZcKOiSWUZ2wnk21urleVGjtyVxY3A',
-  authDomain: 'awana-lms.firebaseapp.com',
-  projectId: 'awana-lms',
-  storageBucket: 'awana-lms.firebasestorage.app',
-  messagingSenderId: '1027643922947',
-  appId: '1:1027643922947:web:46cd349ba082aec8694c36',
-  measurementId: 'G-R6LZR3TM0D',
+type FirebaseConfig = {
+  apiKey: string
+  authDomain: string
+  projectId: string
+  storageBucket: string
+  messagingSenderId: string
+  appId: string
+  measurementId?: string
 };
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || defaultFirebaseConfig.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultFirebaseConfig.authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || defaultFirebaseConfig.projectId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || defaultFirebaseConfig.storageBucket,
-  messagingSenderId:
-    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultFirebaseConfig.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || defaultFirebaseConfig.appId,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || defaultFirebaseConfig.measurementId,
+const firebaseConfig: FirebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || undefined,
 };
+
+const requiredFirebaseConfigKeys: Array<keyof FirebaseConfig> = [
+  'apiKey',
+  'authDomain',
+  'projectId',
+  'storageBucket',
+  'messagingSenderId',
+  'appId',
+];
+
+const missingFirebaseConfigKeys = requiredFirebaseConfigKeys.filter((key) => !firebaseConfig[key]);
 
 // 디버깅: 환경 변수 로드 확인
 if (import.meta.env.DEV) {
@@ -47,12 +57,7 @@ if (import.meta.env.DEV) {
 
 // Firebase 설정이 완료되었는지 확인
 export const isFirebaseConfigured = (): boolean => {
-  return !!(
-    firebaseConfig.apiKey &&
-    firebaseConfig.projectId &&
-    firebaseConfig.appId &&
-    firebaseConfig.apiKey !== 'your_api_key_here'
-  );
+  return missingFirebaseConfigKeys.length === 0;
 };
 
 let app: ReturnType<typeof initializeApp> | null = null;
@@ -61,7 +66,7 @@ let db: ReturnType<typeof getFirestore> | null = null;
 
 if (!isFirebaseConfigured()) {
   throw new Error(
-    'Firebase 설정이 필요합니다. .env 파일에 Firebase 설정을 추가해주세요.'
+    `Firebase 설정이 필요합니다. 누락된 환경 변수: ${missingFirebaseConfigKeys.join(', ')}`
   );
 }
 
