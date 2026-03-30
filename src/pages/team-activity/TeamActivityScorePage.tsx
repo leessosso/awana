@@ -6,12 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Club } from '../../constants/clubs'
 import { teamColors } from '../../models/GameTimeScore'
 import {
+  calculateCountsByTeamFromTeacherEntries,
+  calculateTeamActivityScore,
   calculateTeamActivityTotalScores,
   createEmptyCountsByTeam,
+  createEmptyTeacherEntriesByTeam,
+  createEmptyTeamActivityCounts,
+  normalizeTeamActivitySessionData,
   teamActivityScoreRules,
   type TeamActivityCounts,
   type TeamActivityProgram,
   type TeamKey,
+  type TeamActivityTeacherEntriesByTeam,
   type TeamActivitySessionFormData,
 } from '../../models/TeamActivityScore'
 import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
@@ -19,6 +25,9 @@ import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../../hooks/use-toast'
 import { UserRole } from '../../models/User'
 import { getTeacherProgramLabel, getTeacherTeamLabel } from '../../constants/teacherAssignment'
+import { userService } from '../../services/userService'
+import { canViewReports } from '../../utils/permissions'
+import type { User } from '../../models/User'
 
 const teamOrder: TeamKey[] = ['yellow', 'green', 'blue', 'red']
 const metricOrder: Array<{
@@ -65,7 +74,11 @@ export default function TeamActivityScorePage () {
   const [selectedDate, setSelectedDate] = useState(getKoreanDateString())
   const [selectedProgram, setSelectedProgram] = useState<TeamActivityProgram>(Club.SPARKS)
   const [countsByTeam, setCountsByTeam] = useState(createEmptyCountsByTeam())
+  const [teacherEntriesByTeam, setTeacherEntriesByTeam] = useState<TeamActivityTeacherEntriesByTeam>(
+    createEmptyTeacherEntriesByTeam()
+  )
   const [isEditing, setIsEditing] = useState(false)
+  const [teachers, setTeachers] = useState<User[]>([])
 
   const {
     currentSession,
@@ -74,12 +87,14 @@ export default function TeamActivityScorePage () {
     fetchTeamActivitySession,
     createTeamActivitySession,
     updateTeamActivitySession,
+    updateTeacherTeamCounts,
     deleteTeamActivitySession,
   } = useTeamActivityScoreStore()
 
   const isTeacher = user?.role === UserRole.TEACHER
   const teacherProgram = user?.program
   const teacherTeam = user?.team
+  const canViewTeacherBreakdown = canViewReports(user)
   const hasTeacherAssignment = !isTeacher || (Boolean(teacherProgram) && Boolean(teacherTeam))
   const canEditCurrentProgram = !isTeacher || selectedProgram === teacherProgram
   const editableTeams: TeamKey[] = isTeacher && teacherTeam
@@ -100,12 +115,42 @@ export default function TeamActivityScorePage () {
   }, [isTeacher, teacherProgram])
 
   useEffect(() => {
+    if (!user?.churchId || !canViewTeacherBreakdown) {
+      setTeachers([])
+      return
+    }
+
+    let isMounted = true
+    const loadTeachers = async () => {
+      try {
+        const teacherList = await userService.getTeachersByChurch(user.churchId as string)
+        if (isMounted) {
+          setTeachers(teacherList)
+        }
+      } catch (error) {
+        console.error('선생님 목록 불러오기 실패:', error)
+      }
+    }
+
+    void loadTeachers()
+    return () => {
+      isMounted = false
+    }
+  }, [user?.churchId, canViewTeacherBreakdown])
+
+  useEffect(() => {
     if (isEditing) return
     if (!currentSession) {
       setCountsByTeam(createEmptyCountsByTeam())
+      setTeacherEntriesByTeam(createEmptyTeacherEntriesByTeam())
       return
     }
-    setCountsByTeam(currentSession.countsByTeam)
+    const normalized = normalizeTeamActivitySessionData({
+      countsByTeam: currentSession.countsByTeam,
+      teacherEntriesByTeam: currentSession.teacherEntriesByTeam,
+    })
+    setCountsByTeam(normalized.countsByTeam)
+    setTeacherEntriesByTeam(normalized.teacherEntriesByTeam)
   }, [currentSession, isEditing])
 
   const totalScores = useMemo(
@@ -123,6 +168,26 @@ export default function TeamActivityScorePage () {
     if (isTeacher && teacherTeam && team !== teacherTeam) return
 
     const safeValue = Math.max(0, nextValue)
+    if (isTeacher && user?.uid) {
+      const currentTeamTeacherCounts = teacherEntriesByTeam[team][user.uid] || createEmptyTeamActivityCounts()
+      const nextTeamTeacherCounts = {
+        ...currentTeamTeacherCounts,
+        [key]: safeValue,
+      }
+      const nextTeacherEntriesByTeam = {
+        ...teacherEntriesByTeam,
+        [team]: {
+          ...teacherEntriesByTeam[team],
+          [user.uid]: nextTeamTeacherCounts,
+        },
+      }
+
+      setTeacherEntriesByTeam(nextTeacherEntriesByTeam)
+      setCountsByTeam(calculateCountsByTeamFromTeacherEntries(nextTeacherEntriesByTeam))
+      setIsEditing(true)
+      return
+    }
+
     setCountsByTeam((prev) => ({
       ...prev,
       [team]: {
@@ -136,26 +201,66 @@ export default function TeamActivityScorePage () {
   const handleSave = async () => {
     if (!user?.churchId || !hasTeacherAssignment || !canEditCurrentProgram) return
 
-    const sessionData: TeamActivitySessionFormData = {
-      date: new Date(selectedDate),
-      program: selectedProgram,
-      countsByTeam,
-    }
-
     try {
-      if (currentSession) {
-        await updateTeamActivitySession(currentSession.id, sessionData)
-        toast({
-          title: '성공',
-          description: `${selectedProgram} 팀 활동 점수가 수정되었습니다.`,
-        })
+      if (isTeacher && teacherTeam && user.uid) {
+        const teacherCounts =
+          teacherEntriesByTeam[teacherTeam as TeamKey][user.uid] || createEmptyTeamActivityCounts()
+
+        if (currentSession) {
+          await updateTeacherTeamCounts(
+            currentSession.id,
+            teacherTeam as TeamKey,
+            user.uid,
+            teacherCounts
+          )
+          toast({
+            title: '성공',
+            description: `${selectedProgram} 팀 활동 점수가 선생님별로 수정되었습니다.`,
+          })
+        } else {
+          const teacherOnlyEntries = createEmptyTeacherEntriesByTeam()
+          teacherOnlyEntries[teacherTeam as TeamKey] = {
+            [user.uid]: teacherCounts,
+          }
+
+          const normalized = normalizeTeamActivitySessionData({
+            teacherEntriesByTeam: teacherOnlyEntries,
+          })
+          const sessionData: TeamActivitySessionFormData = {
+            date: new Date(selectedDate),
+            program: selectedProgram,
+            countsByTeam: normalized.countsByTeam,
+            teacherEntriesByTeam: normalized.teacherEntriesByTeam,
+          }
+
+          await createTeamActivitySession(sessionData)
+          toast({
+            title: '성공',
+            description: `${selectedProgram} 팀 활동 점수가 선생님별로 저장되었습니다.`,
+          })
+        }
       } else {
-        await createTeamActivitySession(sessionData)
-        toast({
-          title: '성공',
-          description: `${selectedProgram} 팀 활동 점수가 저장되었습니다.`,
-        })
+        const sessionData: TeamActivitySessionFormData = {
+          date: new Date(selectedDate),
+          program: selectedProgram,
+          countsByTeam,
+        }
+
+        if (currentSession) {
+          await updateTeamActivitySession(currentSession.id, sessionData)
+          toast({
+            title: '성공',
+            description: `${selectedProgram} 팀 활동 점수가 수정되었습니다.`,
+          })
+        } else {
+          await createTeamActivitySession(sessionData)
+          toast({
+            title: '성공',
+            description: `${selectedProgram} 팀 활동 점수가 저장되었습니다.`,
+          })
+        }
       }
+
       setIsEditing(false)
     } catch (error) {
       toast({
@@ -178,6 +283,7 @@ export default function TeamActivityScorePage () {
     try {
       await deleteTeamActivitySession(currentSession.id)
       setCountsByTeam(createEmptyCountsByTeam())
+      setTeacherEntriesByTeam(createEmptyTeacherEntriesByTeam())
       setIsEditing(false)
       toast({
         title: '성공',
@@ -193,6 +299,50 @@ export default function TeamActivityScorePage () {
         variant: 'destructive',
       })
     }
+  }
+
+  const getTeamEditableCounts = (team: TeamKey): TeamActivityCounts => {
+    if (!isTeacher || !user?.uid) {
+      return countsByTeam[team]
+    }
+
+    return teacherEntriesByTeam[team][user.uid] || createEmptyTeamActivityCounts()
+  }
+
+  const getTeacherLabel = (teacherId: string): string => {
+    const teacher = teachers.find((item) => item.uid === teacherId)
+    if (!teacher) return teacherId === '__legacy__' ? '기존 데이터' : '알 수 없음'
+    return teacher.displayName || teacher.loginId || teacher.email || teacherId
+  }
+
+  const getTeacherStatusRows = (team: TeamKey) => {
+    const assignedTeachers = teachers.filter((item) =>
+      item.program === selectedProgram &&
+      item.team === team
+    )
+    const entryTeacherIds = Object.keys(teacherEntriesByTeam[team])
+    const allTeacherIds = Array.from(
+      new Set([
+        ...assignedTeachers.map((item) => item.uid),
+        ...entryTeacherIds,
+      ])
+    )
+
+    return allTeacherIds.map((teacherId) => {
+      const counts = teacherEntriesByTeam[team][teacherId] || createEmptyTeamActivityCounts()
+      return {
+        teacherId,
+        label: getTeacherLabel(teacherId),
+        counts,
+        score: calculateTeamActivityScore(counts),
+        hasInput: Object.values(counts).some((value) => value > 0),
+      }
+    }).sort((a, b) => {
+      if (a.hasInput !== b.hasInput) {
+        return a.hasInput ? -1 : 1
+      }
+      return a.label.localeCompare(b.label, 'ko')
+    })
   }
 
   return (
@@ -332,7 +482,7 @@ export default function TeamActivityScorePage () {
       <div className="grid gap-4 md:grid-cols-2">
         {editableTeams.map((team) => {
           const teamInfo = teamColors[team]
-          const teamCounts = countsByTeam[team]
+          const teamCounts = getTeamEditableCounts(team)
 
           return (
             <Card key={team} className={`border-2 ${teamInfo.borderColor}`}>
@@ -368,6 +518,54 @@ export default function TeamActivityScorePage () {
           )
         })}
       </div>
+
+      {canViewTeacherBreakdown && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">선생님별 입력 현황</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {teamOrder.map((team) => {
+              const rows = getTeacherStatusRows(team)
+              const teamInfo = teamColors[team]
+
+              return (
+                <div key={team} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`} />
+                    <h3 className="text-sm font-semibold">{teamInfo.name}팀</h3>
+                  </div>
+                  {rows.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">배정된 선생님이 없습니다.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {rows.map((row) => (
+                        <div
+                          key={row.teacherId}
+                          className="rounded-md border px-3 py-2 text-sm flex items-center justify-between gap-3"
+                        >
+                          <div>
+                            <div className="font-medium">{row.label}</div>
+                            <div className="text-xs text-muted-foreground">
+                              출석 {row.counts.attendance} / 핸드북 {row.counts.handbook} / 단복 {row.counts.uniform} / 전도 {row.counts.evangelism} / 단원통과 {row.counts.sectionPasses}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold">{row.score}점</div>
+                            <div className="text-xs text-muted-foreground">
+                              {row.hasInput ? '입력됨' : '미입력'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { useAuthStore } from './authStore'
 import { teamActivityScoreService } from '../services/teamActivityScoreService'
 import type {
+  TeamActivityCounts,
+  TeamKey,
   TeamActivityProgram,
   TeamActivitySession,
   TeamActivitySessionFormData,
@@ -16,6 +18,12 @@ interface TeamActivityScoreState {
   updateTeamActivitySession: (
     sessionId: string,
     sessionData: Partial<TeamActivitySessionFormData>
+  ) => Promise<void>
+  updateTeacherTeamCounts: (
+    sessionId: string,
+    team: TeamKey,
+    teacherId: string,
+    counts: TeamActivityCounts
   ) => Promise<void>
   deleteTeamActivitySession: (sessionId: string) => Promise<void>
   clearError: () => void
@@ -96,6 +104,34 @@ export const useTeamActivityScoreStore = create<TeamActivityScoreState>((set, ge
           error instanceof Error
             ? error.message
             : '팀 활동 점수 수정에 실패했습니다.',
+        isLoading: false,
+      })
+      throw error
+    }
+  },
+
+  updateTeacherTeamCounts: async (
+    sessionId: string,
+    team: TeamKey,
+    teacherId: string,
+    counts: TeamActivityCounts
+  ) => {
+    const session = get().currentSession
+    if (!session) {
+      throw new Error('팀 활동 점수 세션을 찾을 수 없습니다.')
+    }
+
+    set({ isLoading: true, error: null })
+    try {
+      await teamActivityScoreService.updateTeacherTeamCounts(sessionId, team, teacherId, counts)
+      await get().fetchTeamActivitySession(session.date, session.program)
+      set({ isLoading: false })
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : '선생님별 팀 활동 점수 수정에 실패했습니다.',
         isLoading: false,
       })
       throw error

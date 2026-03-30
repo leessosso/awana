@@ -13,12 +13,15 @@ export interface TeamActivityCounts {
 }
 
 export type TeamActivityCountsByTeam = Record<TeamKey, TeamActivityCounts>
+export type TeamActivityTeacherEntries = Record<string, TeamActivityCounts>
+export type TeamActivityTeacherEntriesByTeam = Record<TeamKey, TeamActivityTeacherEntries>
 
 export interface TeamActivitySession {
   id: string
   date: Date
   program: TeamActivityProgram
   countsByTeam: TeamActivityCountsByTeam
+  teacherEntriesByTeam: TeamActivityTeacherEntriesByTeam
   totalScores: Record<TeamKey, number>
   churchId: string
   createdBy: string
@@ -28,7 +31,8 @@ export interface TeamActivitySession {
 export interface TeamActivitySessionFormData {
   date: Date
   program: TeamActivityProgram
-  countsByTeam: TeamActivityCountsByTeam
+  countsByTeam?: TeamActivityCountsByTeam
+  teacherEntriesByTeam?: TeamActivityTeacherEntriesByTeam
 }
 
 export const teamActivityScoreRules = {
@@ -55,6 +59,74 @@ export function createEmptyCountsByTeam (): TeamActivityCountsByTeam {
     yellow: createEmptyTeamActivityCounts(),
     blue: createEmptyTeamActivityCounts(),
     green: createEmptyTeamActivityCounts(),
+  }
+}
+
+export function createEmptyTeacherEntriesByTeam (): TeamActivityTeacherEntriesByTeam {
+  return {
+    red: {},
+    yellow: {},
+    blue: {},
+    green: {},
+  }
+}
+
+export function sumTeamActivityCounts (
+  ...countsList: TeamActivityCounts[]
+): TeamActivityCounts {
+  return countsList.reduce(
+    (sum, counts) => ({
+      attendance: sum.attendance + counts.attendance,
+      handbook: sum.handbook + counts.handbook,
+      uniform: sum.uniform + counts.uniform,
+      evangelism: sum.evangelism + counts.evangelism,
+      sectionPasses: sum.sectionPasses + counts.sectionPasses,
+    }),
+    createEmptyTeamActivityCounts()
+  )
+}
+
+export function calculateCountsByTeamFromTeacherEntries (
+  teacherEntriesByTeam: TeamActivityTeacherEntriesByTeam
+): TeamActivityCountsByTeam {
+  return {
+    red: sumTeamActivityCounts(...Object.values(teacherEntriesByTeam.red)),
+    yellow: sumTeamActivityCounts(...Object.values(teacherEntriesByTeam.yellow)),
+    blue: sumTeamActivityCounts(...Object.values(teacherEntriesByTeam.blue)),
+    green: sumTeamActivityCounts(...Object.values(teacherEntriesByTeam.green)),
+  }
+}
+
+export function createTeacherEntriesByTeamFromCounts (
+  countsByTeam: TeamActivityCountsByTeam,
+  defaultTeacherId = '__legacy__'
+): TeamActivityTeacherEntriesByTeam {
+  return {
+    red: { [defaultTeacherId]: { ...countsByTeam.red } },
+    yellow: { [defaultTeacherId]: { ...countsByTeam.yellow } },
+    blue: { [defaultTeacherId]: { ...countsByTeam.blue } },
+    green: { [defaultTeacherId]: { ...countsByTeam.green } },
+  }
+}
+
+export function normalizeTeamActivitySessionData (data: {
+  countsByTeam?: TeamActivityCountsByTeam
+  teacherEntriesByTeam?: TeamActivityTeacherEntriesByTeam
+}): {
+  countsByTeam: TeamActivityCountsByTeam
+  teacherEntriesByTeam: TeamActivityTeacherEntriesByTeam
+} {
+  if (data.teacherEntriesByTeam) {
+    return {
+      teacherEntriesByTeam: data.teacherEntriesByTeam,
+      countsByTeam: calculateCountsByTeamFromTeacherEntries(data.teacherEntriesByTeam),
+    }
+  }
+
+  const countsByTeam = data.countsByTeam || createEmptyCountsByTeam()
+  return {
+    countsByTeam,
+    teacherEntriesByTeam: createTeacherEntriesByTeamFromCounts(countsByTeam),
   }
 }
 
