@@ -9,6 +9,7 @@ const defaultFirebaseConfig = {
   storageBucket: 'awana-lms.firebasestorage.app',
   messagingSenderId: '1027643922947',
   appId: '1:1027643922947:web:46cd349ba082aec8694c36',
+  measurementId: 'G-R6LZR3TM0D',
 };
 
 const firebaseConfig = {
@@ -19,6 +20,7 @@ const firebaseConfig = {
   messagingSenderId:
     import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultFirebaseConfig.messagingSenderId,
   appId: import.meta.env.VITE_FIREBASE_APP_ID || defaultFirebaseConfig.appId,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || defaultFirebaseConfig.measurementId,
 };
 
 // 디버깅: 환경 변수 로드 확인
@@ -29,11 +31,13 @@ if (import.meta.env.DEV) {
     projectId: firebaseConfig.projectId,
     storageBucket: firebaseConfig.storageBucket,
     appId: firebaseConfig.appId,
+    measurementId: firebaseConfig.measurementId,
     hasApiKey: !!firebaseConfig.apiKey,
     hasAuthDomain: !!firebaseConfig.authDomain,
     hasProjectId: !!firebaseConfig.projectId,
     hasStorageBucket: !!firebaseConfig.storageBucket,
     hasAppId: !!firebaseConfig.appId,
+    hasMeasurementId: !!firebaseConfig.measurementId,
   });
   // 환경 변수가 undefined인 경우 경고
   if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.appId) {

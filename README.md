@@ -102,6 +102,7 @@ npm run dev
 - `VITE_FIREBASE_STORAGE_BUCKET`: Firebase Storage Bucket
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`: Firebase Messaging Sender ID
 - `VITE_FIREBASE_APP_ID`: Firebase App ID
+- `VITE_FIREBASE_MEASUREMENT_ID`: Firebase Measurement ID
 
 **테스트 모드 (선택적):**
 로컬 개발 시 자동 로그인을 사용하려면:
@@ -150,6 +151,7 @@ VITE_FIREBASE_PROJECT_ID = [Firebase Project ID]
 VITE_FIREBASE_STORAGE_BUCKET = [Firebase Storage Bucket]
 VITE_FIREBASE_MESSAGING_SENDER_ID = [Firebase Messaging Sender ID]
 VITE_FIREBASE_APP_ID = [Firebase App ID]
+VITE_FIREBASE_MEASUREMENT_ID = [Firebase Measurement ID]
 ```
 
 **자동 정리용 Secrets:**
