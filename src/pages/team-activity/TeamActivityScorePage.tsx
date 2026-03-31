@@ -92,6 +92,7 @@ export default function TeamActivityScorePage () {
   } = useTeamActivityScoreStore()
 
   const isTeacher = user?.role === UserRole.TEACHER
+  const isAdminUser = user?.role === UserRole.ADMIN
   const teacherProgram = user?.program
   const teacherTeam = user?.team
   const canViewTeacherBreakdown = canViewReports(user)
@@ -276,6 +277,14 @@ export default function TeamActivityScorePage () {
 
   const handleDelete = async () => {
     if (!currentSession) return
+    if (!isAdminUser) {
+      toast({
+        title: '권한 없음',
+        description: '팀 활동 점수는 관리자만 삭제할 수 있습니다.',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!confirm(`정말로 이 ${selectedProgram} 팀 활동 점수 기록을 삭제하시겠습니까?`)) {
       return
     }
@@ -393,7 +402,7 @@ export default function TeamActivityScorePage () {
               </div>
             </div>
             <div className="flex gap-2 justify-end">
-              {currentSession && (
+              {currentSession && isAdminUser && (
                 <Button
                   variant="destructive"
                   size="sm"

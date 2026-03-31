@@ -7,6 +7,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // 헬퍼 함수: 관리자 권한인지 확인
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // 사용자 컬렉션
     match /users/{userId} {
       // 인증된 사용자는 모두 읽기/쓰기 가능 (권한 체크는 애플리케이션 레벨에서 처리)
@@ -78,7 +85,9 @@ service cloud.firestore {
 
     // 팀 활동 점수 컬렉션
     match /teamActivityScores/{sessionId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
     }
     // 팀 활동 점수 컬렉션 쿼리 허용
     match /teamActivityScores {

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { useAuthStore } from './authStore'
 import { teamActivityScoreService } from '../services/teamActivityScoreService'
+import { UserRole } from '../models/User'
 import type {
   TeamActivityCounts,
   TeamKey,
@@ -139,6 +140,13 @@ export const useTeamActivityScoreStore = create<TeamActivityScoreState>((set, ge
   },
 
   deleteTeamActivitySession: async (sessionId: string) => {
+    const { user } = useAuthStore.getState()
+    if (user?.role !== UserRole.ADMIN) {
+      const errorMessage = '팀 활동 점수 삭제는 관리자만 가능합니다.'
+      set({ error: errorMessage, isLoading: false })
+      throw new Error(errorMessage)
+    }
+
     set({ isLoading: true, error: null })
     try {
       await teamActivityScoreService.deleteTeamActivitySession(sessionId)
