@@ -18,8 +18,8 @@ export default function LoginPage() {
   // 로그인 성공 후 역할에 따른 리다이렉트
   useEffect(() => {
     if (isAuthenticated && user) {
-      // 관리자는 대시보드로, 다른 선생님들은 핸드북으로
-      const redirectPath = user.role === UserRole.ADMIN ? '/dashboard' : '/handbook';
+      // 관리자는 게임타임으로, 다른 선생님들은 팀활동점수로
+      const redirectPath = user.role === UserRole.ADMIN ? '/game-time' : '/team-activity-score';
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);

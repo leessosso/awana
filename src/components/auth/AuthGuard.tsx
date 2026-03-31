@@ -20,8 +20,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   // 루트 경로 접근 시 역할에 따른 리다이렉트
   useEffect(() => {
     if (!isLoading && isAuthenticated && user && location.pathname === '/') {
-      // 관리자는 대시보드로, 다른 선생님들은 핸드북으로
-      const redirectPath = user.role === UserRole.ADMIN ? '/dashboard' : '/handbook';
+      // 관리자는 게임타임으로, 다른 선생님들은 팀활동점수로
+      const redirectPath = user.role === UserRole.ADMIN ? '/game-time' : '/team-activity-score';
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, isLoading, user, location.pathname, navigate]);

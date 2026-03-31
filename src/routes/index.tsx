@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HandbookPage />,
+        element: <TeamActivityScorePage />,
       },
       {
         path: 'dashboard',
