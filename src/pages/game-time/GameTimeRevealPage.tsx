@@ -270,7 +270,9 @@ export default function GameTimeRevealPage () {
             </div>
           )}
           <div className="mt-2 text-sm text-muted-foreground">
-            {winningTeams.length > 1 ? '공동 우승 점수' : '우승 점수'}
+            {isFinalVisible
+              ? winningTeams.length > 1 ? '공동 우승 점수' : '우승 점수'
+              : '최종 점수'}
           </div>
         </CardContent>
       </Card>
