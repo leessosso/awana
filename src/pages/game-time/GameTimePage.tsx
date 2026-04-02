@@ -242,17 +242,17 @@ export default function GameTimePage() {
         <Card className="shadow-lg">
           <CardContent className="py-3 px-4">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex w-full items-center gap-2 sm:w-auto">
                   <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <Input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-auto"
+                    className="w-full sm:w-auto"
                   />
                 </div>
-                <div className="flex items-center gap-3 px-3 py-1.5 rounded-md bg-muted/50 border">
+                <div className="flex w-full items-center justify-center gap-3 rounded-md border bg-muted/50 px-3 py-1.5 sm:w-auto">
                   <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
                     <input
                       type="radio"
@@ -371,29 +371,28 @@ export default function GameTimePage() {
         <CardContent className="pt-2">
           <div className="space-y-3">
             {/* 게임 점수 추가/차감 */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {(['red', 'yellow', 'blue', 'green'] as const).map((team) => {
                 const teamInfo = teamColors[team]
                 return (
                   <div
                     key={team}
-                    className={`border-2 rounded-lg p-2 ${teamInfo.borderColor} bg-background`}
+                    className={`border-2 rounded-lg p-3 ${teamInfo.borderColor} bg-background`}
                   >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
                         <div
-                          className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
+                          className={`w-3 h-3 rounded-full ${teamInfo.bgColor}`}
                         />
-                        <h3 className="font-semibold text-xs">{teamInfo.name}</h3>
+                        <h3 className="font-semibold text-sm">{teamInfo.name}</h3>
                       </div>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="grid grid-cols-3 gap-2">
                         {gameScoreOptions.map((score) => (
                           <Button
                             key={score}
                             variant="outline"
-                            size="sm"
                             onClick={() => handleAddGameScore(team, score)}
-                            className="h-6 px-1.5 text-xs"
+                            className="h-11 text-sm font-semibold touch-manipulation"
                             disabled={isLoading}
                           >
                             +{score}
