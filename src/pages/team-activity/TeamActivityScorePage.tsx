@@ -363,73 +363,73 @@ export default function TeamActivityScorePage () {
       <Card>
         <CardContent className="py-3 px-4">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <Input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-auto"
+                  className="w-full max-w-[170px] sm:w-auto"
                 />
               </div>
-              <div className="flex items-center gap-3 px-3 py-1.5 rounded-md bg-muted/50 border">
-                <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                  <input
-                    type="radio"
-                    name="program"
-                    value={Club.SPARKS}
-                    checked={selectedProgram === Club.SPARKS}
-                    onChange={(e) => setSelectedProgram(e.target.value as TeamActivityProgram)}
-                    disabled={isTeacher}
-                    className="w-4 h-4 cursor-pointer accent-primary"
-                  />
-                  <span className="text-sm font-medium">SPARKS</span>
-                </label>
-                <div className="w-px h-4 bg-border" />
-                <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                  <input
-                    type="radio"
-                    name="program"
-                    value={Club.TNT}
-                    checked={selectedProgram === Club.TNT}
-                    onChange={(e) => setSelectedProgram(e.target.value as TeamActivityProgram)}
-                    disabled={isTeacher}
-                    className="w-4 h-4 cursor-pointer accent-primary"
-                  />
-                  <span className="text-sm font-medium">T&T</span>
-                </label>
+              <div className="flex gap-2 justify-end flex-shrink-0">
+                {currentSession && isAdminUser && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isLoading}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    삭제
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isLoading || !isEditing || !hasTeacherAssignment || !canEditCurrentProgram}
+                >
+                  {currentSession ? (
+                    <>
+                      <Edit className="h-4 w-4 mr-1" />
+                      수정
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-1" />
+                      저장
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2 justify-end">
-              {currentSession && isAdminUser && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={isLoading}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  삭제
-                </Button>
-              )}
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isLoading || !isEditing || !hasTeacherAssignment || !canEditCurrentProgram}
-              >
-                {currentSession ? (
-                  <>
-                    <Edit className="h-4 w-4 mr-1" />
-                    수정
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-1" />
-                    저장
-                  </>
-                )}
-              </Button>
+            <div className="flex items-center gap-3 px-3 py-1.5 rounded-md bg-muted/50 border w-fit">
+              <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
+                <input
+                  type="radio"
+                  name="program"
+                  value={Club.SPARKS}
+                  checked={selectedProgram === Club.SPARKS}
+                  onChange={(e) => setSelectedProgram(e.target.value as TeamActivityProgram)}
+                  disabled={isTeacher}
+                  className="w-4 h-4 cursor-pointer accent-primary"
+                />
+                <span className="text-sm font-medium">SPARKS</span>
+              </label>
+              <div className="w-px h-4 bg-border" />
+              <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
+                <input
+                  type="radio"
+                  name="program"
+                  value={Club.TNT}
+                  checked={selectedProgram === Club.TNT}
+                  onChange={(e) => setSelectedProgram(e.target.value as TeamActivityProgram)}
+                  disabled={isTeacher}
+                  className="w-4 h-4 cursor-pointer accent-primary"
+                />
+                <span className="text-sm font-medium">T&T</span>
+              </label>
             </div>
           </div>
         </CardContent>
