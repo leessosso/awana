@@ -316,61 +316,12 @@ export default function GameTimePage() {
           </CardContent>
         </Card>
 
-        {/* 최종 합계 */}
-        <Card className="bg-muted/50 shadow-lg">
+        {/* 게임 점수 추가/차감 */}
+        <Card className="shadow-lg">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">최종 합계</CardTitle>
+            <CardTitle className="text-base">게임 점수</CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {(['red', 'yellow', 'blue', 'green'] as const).map((team) => {
-                const teamInfo = teamColors[team]
-                const total = totals[team]
-                const rank = rankings[team]
-                return (
-                  <div
-                    key={team}
-                    className={`border-2 rounded-lg p-2 ${teamInfo.borderColor} bg-background`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div
-                        className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
-                      />
-                      <h3 className="font-semibold text-xs">{teamInfo.name}</h3>
-                      <Badge
-                        variant={rank === 1 ? 'default' : 'secondary'}
-                        className="text-xs py-0 ml-auto"
-                      >
-                        {rank}등
-                      </Badge>
-                    </div>
-                    <div className="text-xl font-bold">{total}점</div>
-                    <div className="text-[11px] text-muted-foreground mt-1">
-                      게임 {gameTotals[team]} + 팀활동 {teamActivityTotals[team]}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 에러 메시지 */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* 게임 점수 섹션 */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">게임 점수</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <div className="space-y-3">
-            {/* 게임 점수 추가/차감 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {(['red', 'yellow', 'blue', 'green'] as const).map((team) => {
                 const teamInfo = teamColors[team]
@@ -404,44 +355,97 @@ export default function GameTimePage() {
                 )
               })}
             </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            {/* 게임 점수 목록 */}
-            {gameScores.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t">
-                <div className="text-xs font-medium text-muted-foreground">
-                  게임 점수 기록
-                </div>
-                <div className="space-y-1 max-h-24 overflow-y-auto">
-                  {gameScores.map((event) => {
-                    const teamInfo = teamColors[event.team]
-                    return (
+      {/* 에러 메시지 */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* 게임 점수 섹션 */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">게임 점수 기록</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
+          {/* 게임 점수 목록 */}
+          {gameScores.length > 0 ? (
+            <div className="space-y-1 max-h-56 overflow-y-auto">
+              {gameScores.map((event) => {
+                const teamInfo = teamColors[event.team]
+                return (
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                  >
+                    <div className="flex items-center gap-2">
                       <div
-                        key={event.id}
-                        className="flex items-center justify-between p-1.5 rounded-md bg-muted/50"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
-                          />
-                          <span className="text-xs">
-                            {teamInfo.name} {event.score > 0 ? '+' : ''}{event.score}점
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteGameScore(event.id)}
-                          disabled={isLoading}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )
-                  })}
+                        className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
+                      />
+                      <span className="text-sm">
+                        {teamInfo.name} {event.score > 0 ? '+' : ''}{event.score}점
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteGameScore(event.id)}
+                      disabled={isLoading}
+                      className="h-7 w-7 p-0"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              아직 추가된 게임 점수가 없습니다.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 최종 합계 */}
+      <Card className="bg-muted/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">최종 합계</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {(['red', 'yellow', 'blue', 'green'] as const).map((team) => {
+              const teamInfo = teamColors[team]
+              const total = totals[team]
+              const rank = rankings[team]
+              return (
+                <div
+                  key={team}
+                  className={`border-2 rounded-lg p-2 ${teamInfo.borderColor} bg-background`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
+                    />
+                    <h3 className="font-semibold text-xs">{teamInfo.name}</h3>
+                    <Badge
+                      variant={rank === 1 ? 'default' : 'secondary'}
+                      className="text-xs py-0 ml-auto"
+                    >
+                      {rank}등
+                    </Badge>
+                  </div>
+                  <div className="text-xl font-bold">{total}점</div>
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    게임 {gameTotals[team]} + 팀활동 {teamActivityTotals[team]}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })}
           </div>
         </CardContent>
       </Card>
