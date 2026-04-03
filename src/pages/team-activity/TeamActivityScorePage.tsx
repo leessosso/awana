@@ -457,75 +457,79 @@ export default function TeamActivityScorePage () {
         </Alert>
       )}
 
-      <Card className="bg-muted/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">팀 활동 점수 합계</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {teamOrder.map((team) => {
-              const teamInfo = teamColors[team]
-              return (
-                <div
-                  key={team}
-                  className={`border-2 rounded-lg p-2 ${teamInfo.borderColor} bg-background`}
-                >
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <div className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`} />
-                    <h3 className="font-semibold text-xs">{teamInfo.name}</h3>
-                    <Badge
-                      variant={rankings[team] === 1 ? 'default' : 'secondary'}
-                      className="text-xs py-0 ml-auto"
+      <div className="flex flex-col gap-4">
+        <div className="order-2 md:order-1">
+          <Card className="bg-muted/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">팀 활동 점수 합계</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {teamOrder.map((team) => {
+                  const teamInfo = teamColors[team]
+                  return (
+                    <div
+                      key={team}
+                      className={`border-2 rounded-lg p-2 ${teamInfo.borderColor} bg-background`}
                     >
-                      {rankings[team]}등
-                    </Badge>
-                  </div>
-                  <div className="text-xl font-bold">{totalScores[team]}점</div>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {editableTeams.map((team) => {
-          const teamInfo = teamColors[team]
-          const teamCounts = getTeamEditableCounts(team)
-
-          return (
-            <Card key={team} className={`border-2 ${teamInfo.borderColor}`}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`} />
-                  {teamInfo.name}팀
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {metricOrder.map((metric) => (
-                  <div
-                    key={metric.key}
-                    className="flex items-center justify-between rounded-md border p-2"
-                  >
-                    <div>
-                      <div className="text-sm font-medium">{metric.label}</div>
-                      <div className="text-xs text-muted-foreground">
-                        1명/1회당 {metric.point}점
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`} />
+                        <h3 className="font-semibold text-xs">{teamInfo.name}</h3>
+                        <Badge
+                          variant={rankings[team] === 1 ? 'default' : 'secondary'}
+                          className="text-xs py-0 ml-auto"
+                        >
+                          {rankings[team]}등
+                        </Badge>
                       </div>
+                      <div className="text-xl font-bold">{totalScores[team]}점</div>
                     </div>
-                    <CountAdjuster
-                      value={teamCounts[metric.key]}
-                      onChange={(nextValue) =>
-                        handleCountChange(team, metric.key, nextValue)
-                      }
-                      disabled={isLoading}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )
-        })}
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="order-1 md:order-2 grid gap-4 md:grid-cols-2">
+          {editableTeams.map((team) => {
+            const teamInfo = teamColors[team]
+            const teamCounts = getTeamEditableCounts(team)
+
+            return (
+              <Card key={team} className={`border-2 ${teamInfo.borderColor}`}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`} />
+                    {teamInfo.name}팀
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {metricOrder.map((metric) => (
+                    <div
+                      key={metric.key}
+                      className="flex items-center justify-between rounded-md border p-2"
+                    >
+                      <div>
+                        <div className="text-sm font-medium">{metric.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          1명/1회당 {metric.point}점
+                        </div>
+                      </div>
+                      <CountAdjuster
+                        value={teamCounts[metric.key]}
+                        onChange={(nextValue) =>
+                          handleCountChange(team, metric.key, nextValue)
+                        }
+                        disabled={isLoading}
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
       </div>
 
       {canViewTeacherBreakdown && (
