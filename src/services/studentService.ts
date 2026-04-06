@@ -290,6 +290,21 @@ export class StudentService {
     }
 
     try {
+      const isActiveTempAssignment = (data: Record<string, unknown>) => {
+        const tempAssignedTeacherId = data.tempAssignedTeacherId as string | undefined;
+        if (!tempAssignedTeacherId) return false;
+
+        const rawTempAssignedUntil = data.tempAssignedUntil as Timestamp | Date | string | undefined;
+        const tempUntil = rawTempAssignedUntil
+          ? rawTempAssignedUntil instanceof Timestamp
+            ? rawTempAssignedUntil.toDate()
+            : new Date(rawTempAssignedUntil)
+          : undefined;
+        const now = new Date();
+
+        return !tempUntil || tempUntil >= now;
+      };
+
       // 담당 선생님이 지정된 경우
       if (teacherId) {
         // 원래 담당 선생님의 학생들 조회
@@ -317,6 +332,14 @@ export class StudentService {
         // assignedSnapshot 처리 (병렬 처리)
         const assignedPromises = assignedSnapshot.docs.map(async (doc) => {
           const data = doc.data();
+          const hasActiveTempAssignment = isActiveTempAssignment(data);
+          const isTemporarilyAssignedToAnotherTeacher =
+            hasActiveTempAssignment && data.tempAssignedTeacherId !== teacherId;
+
+          if (isTemporarilyAssignedToAnotherTeacher) {
+            return;
+          }
+
           const processedStudent = await this.processStudentData(doc.id, data);
           studentMap.set(doc.id, processedStudent);
         });
@@ -324,18 +347,9 @@ export class StudentService {
         // tempAssignedSnapshot 처리 (임시 담당 기간 확인 후 처리)
         const tempPromises = tempAssignedSnapshot.docs.map(async (doc) => {
           const data = doc.data();
-          const tempUntil = data.tempAssignedUntil
-            ? data.tempAssignedUntil instanceof Timestamp
-              ? data.tempAssignedUntil.toDate()
-              : new Date(data.tempAssignedUntil)
-            : undefined;
-
-          const now = new Date();
-          // 임시 담당 종료일이 없거나 아직 지나지 않은 경우만 포함
-          if (!tempUntil || tempUntil >= now) {
-            const processedStudent = await this.processStudentData(doc.id, data);
-            studentMap.set(doc.id, processedStudent);
-          }
+          if (!isActiveTempAssignment(data)) return;
+          const processedStudent = await this.processStudentData(doc.id, data);
+          studentMap.set(doc.id, processedStudent);
         });
 
         await Promise.all([...assignedPromises, ...tempPromises]);

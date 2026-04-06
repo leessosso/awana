@@ -10,9 +10,10 @@ export enum UserRole {
 }
 
 export enum TeacherPosition {
-  HEAD_TEACHER = 'head_teacher',    // 담임 선생님 (클럽 전체 관리)
-  CLUB_LEADER = 'club_leader',      // 클럽 리더 (특정 클럽 관리)
-  ASSISTANT = 'assistant',          // 보조 선생님 (제한적 권한)
+  HEAD_TEACHER = 'head_teacher',           // 담임 선생님
+  ASSISTANT = 'assistant',                 // 보조 선생님
+  OPERATIONS_TEACHER = 'operations_teacher', // 운영 선생님
+  CLUB_LEADER = 'club_leader',             // 레거시 값 (호환성 유지)
 }
 
 export type TeacherProgram = 'Sparks' | 'T&T'
@@ -25,6 +26,7 @@ export interface User {
   displayName: string;
   role: UserRole;
   position?: TeacherPosition;  // 선생님일 경우 직책 (선택적)
+  headTeacherId?: string;      // 보조 선생님의 소속 담임 ID
   program?: TeacherProgram;    // 선생님 소속 클럽
   team?: TeacherTeam;          // 선생님 소속 팀
   churchName: string;

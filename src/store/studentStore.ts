@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Student, StudentFormData } from '../models/Student';
 import { studentService } from '../services/studentService';
 import { useAuthStore } from './authStore';
-import { canManageChurchData } from '../utils/permissions';
+import { canManageChurchData, getScopedTeacherId } from '../utils/permissions';
 
 interface StudentState {
   students: Student[];
@@ -31,7 +31,7 @@ export const useStudentStore = create<StudentState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // 교회 전체 관리 권한이 있는 경우 모든 학생 조회, 그렇지 않으면 자신이 담당하는 학생만 조회
-      const teacherId = canManageChurchData(user) ? undefined : user.uid;
+      const teacherId = canManageChurchData(user) ? undefined : getScopedTeacherId(user);
       const students = await studentService.getStudentsByChurch(user.churchId, teacherId);
       set({ students, isLoading: false });
     } catch (error) {
@@ -55,7 +55,7 @@ export const useStudentStore = create<StudentState>((set, get) => ({
         ...studentData,
         assignedTeacherId:
           studentData.assignedTeacherId ||
-          (canManageChurchData(user) ? undefined : user.uid),
+          (canManageChurchData(user) ? undefined : getScopedTeacherId(user)),
       };
       await studentService.createStudent(finalData, user.uid, user.churchId);
       await get().fetchStudents();

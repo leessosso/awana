@@ -24,7 +24,7 @@ import { DataTable } from '../../components/data-visualization/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useAuthStore } from '../../store/authStore';
 import { Club, CLUB_OPTIONS } from '../../constants';
-import { canManageHandbook, isAdmin, isLeader } from '../../utils/permissions';
+import { canManageChurchData, canManageHandbook, getScopedTeacherId } from '../../utils/permissions';
 import { studentService } from '../../services/studentService';
 import { userService } from '../../services/userService';
 import type { User } from '../../models/User';
@@ -87,9 +87,8 @@ export default function HandbookPage() {
     if (!user?.churchId) return;
 
     try {
-      // 관리자나 교회 리더는 항상 모든 학생 조회, 클럽 리더 이상은 핸드북 관리 권한에 따라 결정
-      const canViewAllStudents = isAdmin(user) || isLeader(user) || canManageHandbook(user);
-      const teacherId = canViewAllStudents ? undefined : user.uid;
+      const canViewAllStudents = canManageChurchData(user) || canManageHandbook(user);
+      const teacherId = canViewAllStudents ? undefined : getScopedTeacherId(user);
 
       const allStudents = await studentService.getStudentsByChurch(user.churchId, teacherId);
 

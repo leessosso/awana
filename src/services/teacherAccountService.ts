@@ -3,12 +3,11 @@ import { initializeApp, getApps } from 'firebase/app';
 import { collection, getDocs, limit, query, setDoc, where, doc } from 'firebase/firestore';
 import { app, db, isFirebaseConfigured } from '../config/firebase';
 import type {
-  TeacherPosition,
   TeacherProgram,
   TeacherTeam,
   User,
 } from '../models/User';
-import { UserRole } from '../models/User';
+import { TeacherPosition, UserRole } from '../models/User';
 import {
   normalizeLoginInput,
   toLoginEmail,
@@ -22,8 +21,9 @@ interface CreateTeacherAccountRequest {
   churchId: string;
   churchName: string;
   position?: TeacherPosition;
-  program: TeacherProgram;
-  team: TeacherTeam;
+  program?: TeacherProgram;
+  team?: TeacherTeam;
+  headTeacherId?: string;
 }
 
 const SECONDARY_APP_NAME = 'teacher-account-manager';
@@ -70,6 +70,19 @@ export async function createTeacherAccount(
 
   await updateProfile(firebaseUser, { displayName: payload.displayName.trim() });
 
+  const normalizedHeadTeacherId =
+    payload.position === TeacherPosition.ASSISTANT
+      ? payload.headTeacherId
+      : undefined;
+  const normalizedTeam =
+    payload.position === TeacherPosition.OPERATIONS_TEACHER
+      ? undefined
+      : payload.team
+  const normalizedProgram =
+    payload.position === TeacherPosition.OPERATIONS_TEACHER
+      ? undefined
+      : payload.program
+
   const teacherData: User = {
     uid: firebaseUser.uid,
     email,
@@ -77,14 +90,19 @@ export async function createTeacherAccount(
     displayName: payload.displayName.trim(),
     role: UserRole.TEACHER,
     position: payload.position,
-    program: payload.program,
-    team: payload.team,
+    headTeacherId: normalizedHeadTeacherId,
+    program: normalizedProgram,
+    team: normalizedTeam,
     churchId: payload.churchId,
     churchName: payload.churchName,
     createdAt: new Date(),
   };
 
-  await setDoc(doc(db, 'users', firebaseUser.uid), teacherData);
+  const teacherDataForWrite = Object.fromEntries(
+    Object.entries(teacherData).filter(([, value]) => value !== undefined)
+  );
+
+  await setDoc(doc(db, 'users', firebaseUser.uid), teacherDataForWrite);
   await setDoc(doc(db, 'loginIndex', toLoginIndexKey(loginId)), {
     email,
     loginId,

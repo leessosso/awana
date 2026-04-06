@@ -12,7 +12,7 @@ import { Badge } from '../../components/ui/Badge';
 import { useStudentStore } from '../../store/studentStore';
 import { useAuthStore } from '../../store/authStore';
 import { userService } from '../../services/userService';
-import { isAdmin } from '../../utils/permissions';
+import { canManageChurchData } from '../../utils/permissions';
 import { Club } from '../../constants';
 import type { Student, StudentFormData } from '../../models/Student';
 import type { User } from '../../models/User';
@@ -60,6 +60,7 @@ export default function StudentsPage() {
   const [transferEndDate, setTransferEndDate] = useState('');
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const canManageAllStudents = canManageChurchData(user);
 
   // 선생님 목록 가져오기
   useEffect(() => {
@@ -280,7 +281,7 @@ export default function StudentsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">
-            {isAdmin(user) ? '학생 관리' : '학생 조회'}
+            {canManageAllStudents ? '학생 관리' : '학생 조회'}
           </h1>
           {selectedStudents.size > 0 && (
             <p className="text-sm text-muted-foreground mt-1">
@@ -289,7 +290,7 @@ export default function StudentsPage() {
           )}
         </div>
         <div className="flex gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
-          {isAdmin(user) && selectedStudents.size > 0 && (
+          {canManageAllStudents && selectedStudents.size > 0 && (
             <>
               <Button
                 onClick={() => setTempAssignmentDialogOpen(true)}
@@ -309,7 +310,7 @@ export default function StudentsPage() {
               </Button>
             </>
           )}
-          {isAdmin(user) && (
+          {canManageAllStudents && (
             <>
               <Button
                 onClick={() => setStudentTransferDialogOpen(true)}
@@ -336,13 +337,13 @@ export default function StudentsPage() {
         <div className="relative w-full sm:flex-1">
           <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
-            placeholder={isAdmin(user) ? "학생 이름 또는 담당 선생님으로 검색" : "학생 이름으로 검색"}
+            placeholder={canManageAllStudents ? "학생 이름 또는 담당 선생님으로 검색" : "학생 이름으로 검색"}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-full"
           />
         </div>
-        {isAdmin(user) && filteredStudents.length > 0 && (
+        {canManageAllStudents && filteredStudents.length > 0 && (
           <div className="flex items-center gap-2">
             <Checkbox
               id="select-all"
@@ -383,7 +384,7 @@ export default function StudentsPage() {
               key={student.id}
               student={student}
               teachers={teachers}
-              isAdmin={isAdmin(user)}
+              isAdmin={canManageAllStudents}
               isSelected={selectedStudents.has(student.id)}
               onSelect={handleStudentSelect}
               onDelete={handleDeleteStudent}
@@ -401,7 +402,7 @@ export default function StudentsPage() {
       )}
 
       {/* 모바일 FAB 버튼 */}
-      {isAdmin(user) && (
+      {canManageAllStudents && (
         <Button
           className="fixed bottom-4 right-4 rounded-full w-14 h-14 shadow-lg md:hidden"
           size="icon"

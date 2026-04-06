@@ -193,6 +193,49 @@ node scripts/cleanup-expired-temp-assignments.js
 - GitHub Actions 실행 결과에서 상세 로그 확인
 - Firebase Console에서 데이터 변경사항 확인
 
+## 👩‍🏫 선생님 구조 마이그레이션
+
+선생님 구조를 다음 기준으로 정리할 때 사용합니다.
+
+- 직책: `head_teacher(담임)`, `assistant(보조)`, `operations_teacher(운영)`
+- 레거시 직책 자동 변환:
+  - `admin_teacher` -> `operations_teacher`
+  - `club_leader` -> `head_teacher`
+- 보조 선생님의 소속 담임은 `headTeacherId`로 관리
+- 학생의 `assignedTeacherId`가 보조 선생님을 가리키는 경우, 소속 담임으로 자동 재배정
+
+### 실행 전 준비
+
+```bash
+# 서비스 계정 키 파일 준비
+# Firebase Console > 프로젝트 설정 > 서비스 계정 > 새 개인 키 생성
+# 저장 경로: scripts/serviceAccountKey.json
+```
+
+### 1) 사전 점검 (DRY RUN)
+
+```bash
+npm run migrate:teacher-roles
+```
+
+상세 로그가 필요하면:
+
+```bash
+npm run migrate:teacher-roles -- --verbose
+```
+
+### 2) 실제 반영
+
+```bash
+npm run migrate:teacher-roles -- --apply
+```
+
+### 주의사항
+
+- `--apply` 없이 실행하면 실제 데이터는 변경되지 않습니다.
+- 경고 목록(`소속 담임 없음`, `담임 계정 미존재` 등)은 수동 보정 후 재실행하세요.
+- 반영 전 Firestore 백업을 권장합니다.
+
 ## 파일 구조
 
 ```

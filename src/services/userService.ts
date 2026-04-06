@@ -6,6 +6,7 @@ import {
   Timestamp,
   doc,
   updateDoc,
+  deleteField,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import type {
@@ -16,7 +17,7 @@ import type {
   TeacherProgram,
   TeacherTeam,
 } from '../models/User';
-import { UserRole } from '../models/User';
+import { TeacherPosition as TeacherPositionEnum, UserRole } from '../models/User';
 
 export class UserService {
   async getTeachersByChurch(churchId: string): Promise<User[]> {
@@ -81,8 +82,9 @@ export class UserService {
     teacherId: string,
     payload: {
       position: TeacherPosition;
-      program: TeacherProgram;
-      team: TeacherTeam;
+      program?: TeacherProgram;
+      team?: TeacherTeam;
+      headTeacherId?: string;
     }
   ): Promise<void> {
     if (!isFirebaseConfigured() || !db) {
@@ -93,8 +95,18 @@ export class UserService {
       const userRef = doc(db, 'users', teacherId);
       await updateDoc(userRef, {
         position: payload.position,
-        program: payload.program,
-        team: payload.team,
+        program:
+          payload.position === TeacherPositionEnum.OPERATIONS_TEACHER
+            ? deleteField()
+            : (payload.program || deleteField()),
+        team:
+          payload.position === TeacherPositionEnum.OPERATIONS_TEACHER
+            ? deleteField()
+            : (payload.team || deleteField()),
+        headTeacherId:
+          payload.position === TeacherPositionEnum.ASSISTANT
+            ? (payload.headTeacherId || deleteField())
+            : deleteField(),
       });
     } catch (error) {
       console.error('선생님 소속 정보 업데이트 실패:', error);

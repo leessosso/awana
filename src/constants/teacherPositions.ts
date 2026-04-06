@@ -11,37 +11,34 @@ export const TEACHER_POSITIONS: PositionInfo[] = [
   {
     value: TeacherPosition.HEAD_TEACHER,
     label: '담임 선생님',
-    description: '클럽 전체를 관리하고 모든 학생과 선생님들을 감독합니다.',
+    description: '담당 학생의 출결/핸드북을 관리하고 반 운영을 담당합니다.',
     permissions: [
-      '학생 등록/수정/삭제',
+      '담당 학생 조회',
       '출결 관리',
       '핸드북 진도 관리',
-      '성경 암송 관리',
-      '리포트 조회',
-      '담당 선생님 지정',
-      '클럽 리더 감독'
-    ]
-  },
-  {
-    value: TeacherPosition.CLUB_LEADER,
-    label: '클럽 리더',
-    description: '특정 클럽의 학생들을 담당하며 교육을 진행합니다.',
-    permissions: [
-      '담당 학생 등록/수정',
-      '출결 관리',
-      '핸드북 진도 관리',
-      '성경 암송 관리',
-      '리포트 조회'
+      '성경 암송 관리'
     ]
   },
   {
     value: TeacherPosition.ASSISTANT,
     label: '보조 선생님',
-    description: '선생님을 도와 기본적인 학생 관리를 지원합니다.',
+    description: '담임 선생님 반을 보조하며 동일 반 학생을 함께 돌봅니다.',
     permissions: [
-      '담당 학생 정보 조회',
-      '성경 암송 관리',
-      '기본 리포트 조회'
+      '담임 반 학생 조회',
+      '성경 암송 관리'
+    ]
+  },
+  {
+    value: TeacherPosition.OPERATIONS_TEACHER,
+    label: '운영 선생님',
+    description: '운영에 필요한 계정/반 편성/전체 학생 관리를 담당합니다.',
+    permissions: [
+      '교회 전체 학생 조회/관리',
+      '선생님 계정 생성/수정',
+      '권한/소속 관리',
+      '리포트 조회',
+      '출결 관리',
+      '핸드북 진도 관리'
     ]
   }
 ];

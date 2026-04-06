@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { userService } from '../../services/userService';
 import { studentService } from '../../services/studentService';
 import { AttendanceStatus } from '../../models/Attendance';
-import { canManageAttendance } from '../../utils/permissions';
+import { canManageChurchData, getScopedTeacherId } from '../../utils/permissions';
 import { Club } from '../../constants/clubs';
 import type { User } from '../../models/User';
 import type { Student } from '../../models/Student';
@@ -69,6 +69,7 @@ export default function AttendancePage() {
   const [selectedAttendances, setSelectedAttendances] = useState<Set<string>>(new Set());
   const [teachers, setTeachers] = useState<User[]>([]);
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
+  const studentIdSet = new Set((students || []).map(student => student.id));
 
   // 선생님 목록 가져오기
   useEffect(() => {
@@ -91,8 +92,8 @@ export default function AttendancePage() {
 
     setIsStudentLoading(true);
     try {
-      // 출석관리 권한이 있으면 전체 학생 조회, 없으면 담당 학생만 조회
-      const teacherId = canManageAttendance(user) ? undefined : user.uid;
+      // 교회 전체 관리 권한이 있으면 전체 학생 조회, 아니면 담당 학생만 조회
+      const teacherId = canManageChurchData(user) ? undefined : getScopedTeacherId(user);
       const studentList = await studentService.getStudentsByChurch(user.churchId, teacherId);
       setStudents(studentList);
     } catch (error) {
@@ -112,7 +113,8 @@ export default function AttendancePage() {
   const handleOpenAttendanceDialog = () => {
     // 해당 날짜의 기존 출결 데이터를 로드
     const existingAttendances = attendances?.filter(a =>
-      a.date.toISOString().split('T')[0] === selectedDate
+      a.date.toISOString().split('T')[0] === selectedDate &&
+      studentIdSet.has(a.studentId)
     ) || [];
 
     const presentStudentIds = new Set(
@@ -131,7 +133,8 @@ export default function AttendancePage() {
     try {
       // 기존 출결 데이터 삭제 후 새로 생성
       const existingAttendances = attendances?.filter(a =>
-        a.date.toISOString().split('T')[0] === selectedDate
+        a.date.toISOString().split('T')[0] === selectedDate &&
+        studentIdSet.has(a.studentId)
       ) || [];
 
       // 각 학생에 대해 출결 기록 생성/업데이트
@@ -212,7 +215,8 @@ export default function AttendancePage() {
     if (!attendances) return { present: 0, absent: 0, total: 0 };
 
     const dayAttendances = attendances.filter(a =>
-      a.date.toISOString().split('T')[0] === selectedDate
+      a.date.toISOString().split('T')[0] === selectedDate &&
+      studentIdSet.has(a.studentId)
     );
 
     const present = dayAttendances.filter(a => a.status === AttendanceStatus.PRESENT).length;

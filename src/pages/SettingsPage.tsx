@@ -44,14 +44,16 @@ export default function SettingsPage() {
 
   const [displayName, setDisplayName] = useState('');
   const [position, setPosition] = useState<TeacherPosition>(TeacherPosition.ASSISTANT);
-  const [program, setProgram] = useState<TeacherProgram>(DEFAULT_TEACHER_PROGRAM);
-  const [team, setTeam] = useState<TeacherTeam>(DEFAULT_TEACHER_TEAM);
+  const [program, setProgram] = useState<TeacherProgram | ''>(DEFAULT_TEACHER_PROGRAM);
+  const [team, setTeam] = useState<TeacherTeam | ''>(DEFAULT_TEACHER_TEAM);
+  const [headTeacherId, setHeadTeacherId] = useState('');
   const [isSavingTeacherId, setIsSavingTeacherId] = useState<string | null>(null);
   const [editingAssignments, setEditingAssignments] = useState<
     Record<string, {
       position: TeacherPosition
-      program: TeacherProgram
-      team: TeacherTeam
+      program?: TeacherProgram
+      team?: TeacherTeam
+      headTeacherId?: string
     }>
   >({});
   const [currentPassword, setCurrentPassword] = useState('');
@@ -61,6 +63,7 @@ export default function SettingsPage() {
   const isUserManager = canManageUsers(user);
   const canRenderTeacherSettings = isUserManager && !!user?.churchId;
   const previewLoginId = normalizeLoginInput(displayName);
+  const headTeacherOptions = teachers.filter((teacher) => teacher.position === TeacherPosition.HEAD_TEACHER);
 
   const loadTeachers = useCallback(async () => {
     if (!user?.churchId || !canRenderTeacherSettings) {
@@ -76,13 +79,15 @@ export default function SettingsPage() {
           ...acc,
           [teacher.uid]: {
             position: teacher.position || TeacherPosition.ASSISTANT,
-            program: teacher.program || DEFAULT_TEACHER_PROGRAM,
-            team: teacher.team || DEFAULT_TEACHER_TEAM,
+            program: teacher.program,
+            team: teacher.team,
+            headTeacherId: teacher.headTeacherId,
           },
         }), {} as Record<string, {
           position: TeacherPosition
-          program: TeacherProgram
-          team: TeacherTeam
+          program?: TeacherProgram
+          team?: TeacherTeam
+          headTeacherId?: string
         }>)
       );
     } catch (loadError) {
@@ -113,6 +118,13 @@ export default function SettingsPage() {
       return;
     }
 
+    const normalizedHeadTeacherId =
+      position === TeacherPosition.ASSISTANT ? (headTeacherId || undefined) : undefined;
+    const normalizedProgram =
+      position === TeacherPosition.OPERATIONS_TEACHER ? undefined : (program || undefined);
+    const normalizedTeam =
+      position === TeacherPosition.OPERATIONS_TEACHER ? undefined : (team || undefined);
+
     setIsCreating(true);
     try {
       const createdTeacher = await createTeacherAccount({
@@ -122,13 +134,15 @@ export default function SettingsPage() {
         churchId: currentUser.churchId,
         churchName: currentUser.churchName,
         position,
-        program,
-        team,
+        program: normalizedProgram,
+        team: normalizedTeam,
+        headTeacherId: normalizedHeadTeacherId,
       });
       setDisplayName('');
       setPosition(TeacherPosition.ASSISTANT);
       setProgram(DEFAULT_TEACHER_PROGRAM);
       setTeam(DEFAULT_TEACHER_TEAM);
+      setHeadTeacherId('');
       setSuccessMessage(
         `${createdTeacher.displayName} 선생님 계정을 생성했습니다. 로그인 아이디는 ${createdTeacher.loginId}이고, 초기 비밀번호는 ${INITIAL_TEACHER_PASSWORD} 입니다.`
       );
@@ -303,7 +317,20 @@ export default function SettingsPage() {
                 </div>
                 <Select
                   value={position}
-                  onValueChange={(value) => setPosition(value as TeacherPosition)}
+                  onValueChange={(value) => {
+                    const nextPosition = value as TeacherPosition;
+                    setPosition(nextPosition);
+                    if (nextPosition !== TeacherPosition.ASSISTANT) {
+                      setHeadTeacherId('');
+                    }
+                    if (nextPosition === TeacherPosition.OPERATIONS_TEACHER) {
+                      setProgram('');
+                      setTeam('');
+                    } else if (!program || !team) {
+                      setProgram(DEFAULT_TEACHER_PROGRAM);
+                      setTeam(DEFAULT_TEACHER_TEAM);
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="직책 선택" />
@@ -317,13 +344,32 @@ export default function SettingsPage() {
                   </SelectContent>
                 </Select>
                 <Select
-                  value={program}
-                  onValueChange={(value) => setProgram(value as TeacherProgram)}
+                  value={headTeacherId || 'none'}
+                  onValueChange={(value) => setHeadTeacherId(value === 'none' ? '' : value)}
+                  disabled={position !== TeacherPosition.ASSISTANT}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="소속 클럽 선택" />
+                    <SelectValue placeholder="소속 담임 선택 (보조 선생님만)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">미지정</SelectItem>
+                    {headTeacherOptions.map((item) => (
+                      <SelectItem key={item.uid} value={item.uid}>
+                        {item.displayName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={program || 'none'}
+                  onValueChange={(value) => setProgram(value === 'none' ? '' : (value as TeacherProgram))}
+                  disabled={position === TeacherPosition.OPERATIONS_TEACHER}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="소속 클럽 선택 (운영 선생님은 없음)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">클럽 없음</SelectItem>
                     {TEACHER_PROGRAM_OPTIONS.map((item) => (
                       <SelectItem key={item.value} value={item.value}>
                         {item.label}
@@ -332,13 +378,15 @@ export default function SettingsPage() {
                   </SelectContent>
                 </Select>
                 <Select
-                  value={team}
-                  onValueChange={(value) => setTeam(value as TeacherTeam)}
+                  value={team || 'none'}
+                  onValueChange={(value) => setTeam(value === 'none' ? '' : (value as TeacherTeam))}
+                  disabled={position === TeacherPosition.OPERATIONS_TEACHER}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="소속 팀 선택" />
+                    <SelectValue placeholder="소속 팀 선택 (운영 선생님은 없음)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">팀 없음</SelectItem>
                     {TEACHER_TEAM_OPTIONS.map((item) => (
                       <SelectItem key={item.value} value={item.value}>
                         {item.label}
@@ -400,6 +448,9 @@ export default function SettingsPage() {
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
                             현재: {teacher.position ? getPositionLabel(teacher.position) : '직책 미지정'} / {getTeacherProgramLabel(teacher.program)} / {getTeacherTeamLabel(teacher.team)}
+                            {teacher.position === TeacherPosition.ASSISTANT && teacher.headTeacherId
+                              ? ` / 소속 담임: ${teachers.find((t) => t.uid === teacher.headTeacherId)?.displayName || '알 수 없음'}`
+                              : ''}
                           </p>
                         </div>
                         <Button
@@ -419,8 +470,18 @@ export default function SettingsPage() {
                               ...prev,
                               [teacher.uid]: {
                                 position: value as TeacherPosition,
-                                program: prev[teacher.uid]?.program || teacher.program || DEFAULT_TEACHER_PROGRAM,
-                                team: prev[teacher.uid]?.team || teacher.team || DEFAULT_TEACHER_TEAM,
+                                program:
+                                  (value as TeacherPosition) === TeacherPosition.OPERATIONS_TEACHER
+                                    ? undefined
+                                    : (prev[teacher.uid]?.program || teacher.program || DEFAULT_TEACHER_PROGRAM),
+                                team:
+                                  (value as TeacherPosition) === TeacherPosition.OPERATIONS_TEACHER
+                                    ? undefined
+                                    : (prev[teacher.uid]?.team || teacher.team || DEFAULT_TEACHER_TEAM),
+                                headTeacherId:
+                                  (value as TeacherPosition) === TeacherPosition.ASSISTANT
+                                    ? prev[teacher.uid]?.headTeacherId || teacher.headTeacherId
+                                    : undefined,
                               },
                             }))
                           }
@@ -437,22 +498,54 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                         <Select
-                          value={editingAssignments[teacher.uid]?.program || DEFAULT_TEACHER_PROGRAM}
+                          value={editingAssignments[teacher.uid]?.headTeacherId || 'none'}
                           onValueChange={(value) =>
                             setEditingAssignments((prev) => ({
                               ...prev,
                               [teacher.uid]: {
                                 position: prev[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT,
-                                program: value as TeacherProgram,
+                                program: prev[teacher.uid]?.program || teacher.program || DEFAULT_TEACHER_PROGRAM,
                                 team: prev[teacher.uid]?.team || teacher.team || DEFAULT_TEACHER_TEAM,
+                                headTeacherId: value === 'none' ? undefined : value,
                               },
                             }))
                           }
+                          disabled={(editingAssignments[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT) !== TeacherPosition.ASSISTANT}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="클럽 선택" />
+                            <SelectValue placeholder="소속 담임" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none">미지정</SelectItem>
+                            {headTeacherOptions
+                              .filter((item) => item.uid !== teacher.uid)
+                              .map((item) => (
+                                <SelectItem key={item.uid} value={item.uid}>
+                                  {item.displayName}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={editingAssignments[teacher.uid]?.program || 'none'}
+                          onValueChange={(value) =>
+                            setEditingAssignments((prev) => ({
+                              ...prev,
+                              [teacher.uid]: {
+                                position: prev[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT,
+                                program: value === 'none' ? undefined : (value as TeacherProgram),
+                                team: prev[teacher.uid]?.team || teacher.team,
+                                headTeacherId: prev[teacher.uid]?.headTeacherId || teacher.headTeacherId,
+                              },
+                            }))
+                          }
+                          disabled={(editingAssignments[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT) === TeacherPosition.OPERATIONS_TEACHER}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="클럽 선택 (운영 선생님은 없음)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">클럽 없음</SelectItem>
                             {TEACHER_PROGRAM_OPTIONS.map((item) => (
                               <SelectItem key={item.value} value={item.value}>
                                 {item.label}
@@ -461,22 +554,25 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                         <Select
-                          value={editingAssignments[teacher.uid]?.team || DEFAULT_TEACHER_TEAM}
+                          value={editingAssignments[teacher.uid]?.team || 'none'}
                           onValueChange={(value) =>
                             setEditingAssignments((prev) => ({
                               ...prev,
                               [teacher.uid]: {
                                 position: prev[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT,
                                 program: prev[teacher.uid]?.program || teacher.program || DEFAULT_TEACHER_PROGRAM,
-                                team: value as TeacherTeam,
+                                team: value === 'none' ? undefined : (value as TeacherTeam),
+                                headTeacherId: prev[teacher.uid]?.headTeacherId || teacher.headTeacherId,
                               },
                             }))
                           }
+                          disabled={(editingAssignments[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT) === TeacherPosition.OPERATIONS_TEACHER}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="팀 선택" />
+                            <SelectValue placeholder="팀 선택 (운영 선생님은 없음)" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none">팀 없음</SelectItem>
                             {TEACHER_TEAM_OPTIONS.map((item) => (
                               <SelectItem key={item.value} value={item.value}>
                                 {item.label}

@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "clean": "rm -rf node_modules/.vite dist",
+    "migrate:teacher-roles": "node scripts/migrate-teacher-role-structure.js",
     "setup:env": "cp .env.example .env 2>/dev/null || echo '⚠️  .env.example 파일이 없습니다. 수동으로 .env 파일을 생성해주세요.'",
     "predeploy": "npm run build",
     "deploy": "rm -rf docs && mv dist docs && git add docs && git commit -m 'Deploy to GitHub Pages' && git push origin awana-lms"

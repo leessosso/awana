@@ -23,7 +23,7 @@ import {
 import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../../hooks/use-toast'
-import { UserRole } from '../../models/User'
+import { TeacherPosition, UserRole } from '../../models/User'
 import { getTeacherProgramLabel, getTeacherTeamLabel } from '../../constants/teacherAssignment'
 import { userService } from '../../services/userService'
 import { canViewReports } from '../../utils/permissions'
@@ -92,13 +92,18 @@ export default function TeamActivityScorePage () {
   } = useTeamActivityScoreStore()
 
   const isTeacher = user?.role === UserRole.TEACHER
+  const isOperationsTeacher = isTeacher && (
+    user?.position === TeacherPosition.OPERATIONS_TEACHER ||
+    (user?.position as string | undefined) === 'admin_teacher'
+  )
+  const isScopedTeacher = isTeacher && !isOperationsTeacher
   const isAdminUser = user?.role === UserRole.ADMIN
   const teacherProgram = user?.program
   const teacherTeam = user?.team
   const canViewTeacherBreakdown = canViewReports(user)
-  const hasTeacherAssignment = !isTeacher || (Boolean(teacherProgram) && Boolean(teacherTeam))
-  const canEditCurrentProgram = !isTeacher || selectedProgram === teacherProgram
-  const editableTeams: TeamKey[] = isTeacher && teacherTeam
+  const hasTeacherAssignment = !isScopedTeacher || (Boolean(teacherProgram) && Boolean(teacherTeam))
+  const canEditCurrentProgram = !isScopedTeacher || selectedProgram === teacherProgram
+  const editableTeams: TeamKey[] = isScopedTeacher && teacherTeam
     ? [teacherTeam as TeamKey]
     : teamOrder
 
@@ -109,11 +114,11 @@ export default function TeamActivityScorePage () {
   }, [user?.churchId, selectedDate, selectedProgram, fetchTeamActivitySession])
 
   useEffect(() => {
-    if (!isTeacher || !teacherProgram) return
+    if (!isScopedTeacher || !teacherProgram) return
     setSelectedProgram(
       teacherProgram === Club.SPARKS ? Club.SPARKS : Club.TNT
     )
-  }, [isTeacher, teacherProgram])
+  }, [isScopedTeacher, teacherProgram])
 
   useEffect(() => {
     if (!user?.churchId || !canViewTeacherBreakdown) {
@@ -166,10 +171,10 @@ export default function TeamActivityScorePage () {
     nextValue: number
   ) => {
     if (!hasTeacherAssignment || !canEditCurrentProgram) return
-    if (isTeacher && teacherTeam && team !== teacherTeam) return
+    if (isScopedTeacher && teacherTeam && team !== teacherTeam) return
 
     const safeValue = Math.max(0, nextValue)
-    if (isTeacher && user?.uid) {
+    if (isScopedTeacher && user?.uid) {
       const currentTeamTeacherCounts = teacherEntriesByTeam[team][user.uid] || createEmptyTeamActivityCounts()
       const nextTeamTeacherCounts = {
         ...currentTeamTeacherCounts,
@@ -203,7 +208,7 @@ export default function TeamActivityScorePage () {
     if (!user?.churchId || !hasTeacherAssignment || !canEditCurrentProgram) return
 
     try {
-      if (isTeacher && teacherTeam && user.uid) {
+      if (isScopedTeacher && teacherTeam && user.uid) {
         const teacherCounts =
           teacherEntriesByTeam[teacherTeam as TeamKey][user.uid] || createEmptyTeamActivityCounts()
 
@@ -311,7 +316,7 @@ export default function TeamActivityScorePage () {
   }
 
   const getTeamEditableCounts = (team: TeamKey): TeamActivityCounts => {
-    if (!isTeacher || !user?.uid) {
+    if (!isScopedTeacher || !user?.uid) {
       return countsByTeam[team]
     }
 
@@ -412,7 +417,7 @@ export default function TeamActivityScorePage () {
                   value={Club.SPARKS}
                   checked={selectedProgram === Club.SPARKS}
                   onChange={(e) => setSelectedProgram(e.target.value as TeamActivityProgram)}
-                  disabled={isTeacher}
+                  disabled={isScopedTeacher}
                   className="w-4 h-4 cursor-pointer accent-primary"
                 />
                 <span className="text-sm font-medium">SPARKS</span>
@@ -425,7 +430,7 @@ export default function TeamActivityScorePage () {
                   value={Club.TNT}
                   checked={selectedProgram === Club.TNT}
                   onChange={(e) => setSelectedProgram(e.target.value as TeamActivityProgram)}
-                  disabled={isTeacher}
+                  disabled={isScopedTeacher}
                   className="w-4 h-4 cursor-pointer accent-primary"
                 />
                 <span className="text-sm font-medium">T&T</span>
@@ -449,7 +454,7 @@ export default function TeamActivityScorePage () {
         </Alert>
       )}
 
-      {isTeacher && hasTeacherAssignment && (
+      {isScopedTeacher && hasTeacherAssignment && (
         <Alert>
           <AlertDescription>
             내 소속: {getTeacherProgramLabel(teacherProgram)} / {getTeacherTeamLabel(teacherTeam)}
