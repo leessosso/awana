@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Calendar, Edit, Save, Trash2 } from 'lucide-react'
+import { Calendar, CheckCircle, Edit, Save, Trash2 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Badge, Input, Alert, AlertDescription, CountAdjuster } from '../../components/ui'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog'
 import { Club } from '../../constants/clubs'
 import { teamColors } from '../../models/GameTimeScore'
 import {
@@ -22,12 +29,17 @@ import {
 } from '../../models/TeamActivityScore'
 import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
 import { useAuthStore } from '../../store/authStore'
+import { useAttendanceStore } from '../../store/attendanceStore'
 import { useToast } from '../../hooks/use-toast'
 import { TeacherPosition, UserRole } from '../../models/User'
 import { getTeacherProgramLabel, getTeacherTeamLabel } from '../../constants/teacherAssignment'
 import { userService } from '../../services/userService'
-import { canViewReports } from '../../utils/permissions'
+import { studentService } from '../../services/studentService'
+import { AttendanceStatus } from '../../models/Attendance'
+import { canManageChurchData, canViewReports, getScopedTeacherId } from '../../utils/permissions'
+import { useMobile } from '../../hooks/useMobile'
 import type { User } from '../../models/User'
+import type { Student } from '../../models/Student'
 
 const teamOrder: TeamKey[] = ['yellow', 'green', 'blue', 'red']
 const metricOrder: Array<{
@@ -69,6 +81,7 @@ function calculateRankings (scores: Record<TeamKey, number>): Record<TeamKey, nu
 }
 
 export default function TeamActivityScorePage () {
+  const isMobile = useMobile()
   const { user } = useAuthStore()
   const { toast } = useToast()
   const [selectedDate, setSelectedDate] = useState(getKoreanDateString())
@@ -79,6 +92,9 @@ export default function TeamActivityScorePage () {
   )
   const [isEditing, setIsEditing] = useState(false)
   const [teachers, setTeachers] = useState<User[]>([])
+  const [students, setStudents] = useState<Student[]>([])
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false)
+  const [selectedAttendances, setSelectedAttendances] = useState<Set<string>>(new Set())
 
   const {
     currentSession,
@@ -90,6 +106,12 @@ export default function TeamActivityScorePage () {
     updateTeacherTeamCounts,
     deleteTeamActivitySession,
   } = useTeamActivityScoreStore()
+  const {
+    attendances,
+    fetchAttendances,
+    createAttendance,
+    updateAttendance,
+  } = useAttendanceStore()
 
   const isTeacher = user?.role === UserRole.TEACHER
   const isOperationsTeacher = isTeacher && (
@@ -112,6 +134,27 @@ export default function TeamActivityScorePage () {
     setIsEditing(false)
     fetchTeamActivitySession(new Date(selectedDate), selectedProgram)
   }, [user?.churchId, selectedDate, selectedProgram, fetchTeamActivitySession])
+
+  useEffect(() => {
+    if (!user?.churchId) return
+    fetchAttendances(user.churchId, selectedDate)
+  }, [user?.churchId, selectedDate, fetchAttendances])
+
+  useEffect(() => {
+    if (!user?.churchId) return
+
+    const fetchStudentsForAttendance = async () => {
+      try {
+        const teacherId = canManageChurchData(user) ? undefined : getScopedTeacherId(user)
+        const studentList = await studentService.getStudentsByChurch(user.churchId as string, teacherId)
+        setStudents(studentList.filter((student) => student.club === selectedProgram))
+      } catch (error) {
+        console.error('학생 목록 가져오기 실패:', error)
+      }
+    }
+
+    void fetchStudentsForAttendance()
+  }, [user, selectedProgram])
 
   useEffect(() => {
     if (!isScopedTeacher || !teacherProgram) return
@@ -359,6 +402,72 @@ export default function TeamActivityScorePage () {
     })
   }
 
+  const handleOpenAttendanceDialog = () => {
+    const existingAttendances = attendances?.filter((attendance) =>
+      attendance.date.toISOString().split('T')[0] === selectedDate
+    ) || []
+    const presentStudentIds = new Set(
+      existingAttendances
+        .filter((attendance) => attendance.status === AttendanceStatus.PRESENT)
+        .map((attendance) => attendance.studentId)
+    )
+
+    setSelectedAttendances(presentStudentIds)
+    setAttendanceDialogOpen(true)
+  }
+
+  const handleStudentToggle = (studentId: string) => {
+    const nextSelected = new Set(selectedAttendances)
+    if (nextSelected.has(studentId)) {
+      nextSelected.delete(studentId)
+    } else {
+      nextSelected.add(studentId)
+    }
+    setSelectedAttendances(nextSelected)
+  }
+
+  const handleSaveAttendance = async () => {
+    if (!user?.churchId) return
+
+    try {
+      const existingAttendances = attendances?.filter((attendance) =>
+        attendance.date.toISOString().split('T')[0] === selectedDate
+      ) || []
+
+      for (const student of students) {
+        const isPresent = selectedAttendances.has(student.id)
+        const existingAttendance = existingAttendances.find((attendance) => attendance.studentId === student.id)
+
+        if (existingAttendance) {
+          await updateAttendance(existingAttendance.id, {
+            ...existingAttendance,
+            status: isPresent ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
+          })
+          continue
+        }
+
+        await createAttendance({
+          studentId: student.id,
+          date: new Date(selectedDate),
+          status: isPresent ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
+          studentName: student.name,
+          teacherId: '',
+          teacherName: '',
+        })
+      }
+
+      await fetchAttendances(user.churchId, selectedDate)
+      setAttendanceDialogOpen(false)
+    } catch (error) {
+      console.error('출결 저장 실패:', error)
+      toast({
+        title: '오류',
+        description: '출결 저장에 실패했습니다.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between">
@@ -584,6 +693,87 @@ export default function TeamActivityScorePage () {
           </CardContent>
         </Card>
       )}
+
+      {/* 모바일 출결 체크 FAB */}
+      {isMobile && !attendanceDialogOpen && (
+        <Button
+          className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
+          onClick={handleOpenAttendanceDialog}
+          style={{ zIndex: 9999 }}
+        >
+          <Calendar className="h-6 w-6" />
+        </Button>
+      )}
+
+      {/* 출결 체크 다이얼로그 */}
+      <Dialog open={attendanceDialogOpen} onOpenChange={setAttendanceDialogOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader className="text-center pb-2">
+            <DialogTitle className="text-xl font-bold">📅 출결 체크</DialogTitle>
+            <DialogDescription className="text-base">
+              {selectedDate} 출결 현황
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mb-4">
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(event) => setSelectedDate(event.target.value)}
+              className="w-full"
+              style={{ colorScheme: 'light dark' }}
+            />
+          </div>
+
+          <div className="max-h-60 overflow-y-auto space-y-2">
+            {students.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                등록된 학생이 없습니다.
+              </p>
+            ) : (
+              students.map((student) => (
+                <div
+                  key={student.id}
+                  onClick={() => handleStudentToggle(student.id)}
+                  className={`flex items-center justify-between min-h-12 px-4 py-3 rounded-lg border cursor-pointer text-base ${
+                    selectedAttendances.has(student.id)
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-card border-border'
+                  }`}
+                >
+                  <span className="font-medium">{student.name}</span>
+                  <CheckCircle
+                    className={`h-5 w-5 ${
+                      selectedAttendances.has(student.id) ? 'text-primary-foreground' : 'text-muted-foreground'
+                    }`}
+                  />
+                </div>
+              ))
+            )}
+          </div>
+
+          <p className="text-sm text-muted-foreground text-center mt-4 mb-6">
+            출석한 학생을 선택해주세요
+          </p>
+
+          <div className="flex justify-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setAttendanceDialogOpen(false)}
+              className="px-6 py-2"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSaveAttendance}
+              className="px-6 py-2 shadow-md hover:shadow-lg transition-all"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              저장하기
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

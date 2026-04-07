@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User as UserIcon, CheckCircle2, Circle, CheckCircle, Calendar, Plus } from 'lucide-react';
+import { User as UserIcon, CheckCircle2, Circle, Calendar, Plus } from 'lucide-react';
 import { useMobile } from '../../hooks/useMobile';
 import { useAttendanceStore } from '../../store/attendanceStore';
 import { useStudentStore } from '../../store/studentStore';
@@ -13,13 +13,6 @@ import type { User } from '../../models/User';
 import type { Student } from '../../models/Student';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '../../components/ui/dialog';
 import { Card, CardContent } from '../../components/ui';
 import { Badge } from '../../components/ui';
 import { Alert, AlertDescription } from '../../components/ui';
@@ -65,8 +58,6 @@ export default function AttendancePage() {
   };
 
   const [selectedDate, setSelectedDate] = useState(getKoreanDateString());
-  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
-  const [selectedAttendances, setSelectedAttendances] = useState<Set<string>>(new Set());
   const [teachers, setTeachers] = useState<User[]>([]);
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const studentIdSet = new Set((students || []).map(student => student.id));
@@ -110,74 +101,38 @@ export default function AttendancePage() {
     }
   }, [user?.churchId, selectedDate, fetchAttendances]);
 
-  const handleOpenAttendanceDialog = () => {
-    // 해당 날짜의 기존 출결 데이터를 로드
-    const existingAttendances = attendances?.filter(a =>
-      a.date.toISOString().split('T')[0] === selectedDate &&
-      studentIdSet.has(a.studentId)
-    ) || [];
-
-    const presentStudentIds = new Set(
-      existingAttendances
-        .filter(a => a.status === AttendanceStatus.PRESENT)
-        .map(a => a.studentId)
-    );
-
-    setSelectedAttendances(presentStudentIds);
-    setAttendanceDialogOpen(true);
-  };
-
-  const handleSaveAttendance = async () => {
+  const handleAttendanceChange = async (student: Student, status: AttendanceStatus) => {
     if (!user?.churchId) return;
 
     try {
-      // 기존 출결 데이터 삭제 후 새로 생성
       const existingAttendances = attendances?.filter(a =>
         a.date.toISOString().split('T')[0] === selectedDate &&
-        studentIdSet.has(a.studentId)
+        a.studentId === student.id
       ) || [];
 
-      // 각 학생에 대해 출결 기록 생성/업데이트
-      for (const student of students || []) {
-        const isPresent = selectedAttendances.has(student.id);
-        const existingAttendance = existingAttendances.find(a => a.studentId === student.id);
-
-        if (existingAttendance) {
-          // 기존 기록 업데이트
-          await updateAttendance(existingAttendance.id, {
-            ...existingAttendance,
-            status: isPresent ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
-          });
-        } else {
-          // 새 기록 생성
-          const teacherId = getCurrentTeacherId(student);
-          const teacherName = getTeacherName(teacherId);
-          await createAttendance({
-            studentId: student.id,
-            date: new Date(selectedDate),
-            status: isPresent ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
-            studentName: student.name,
-            teacherId: teacherId || '',
-            teacherName: teacherName,
-          });
-        }
+      const existingAttendance = existingAttendances[0];
+      if (existingAttendance) {
+        await updateAttendance(existingAttendance.id, {
+          ...existingAttendance,
+          status,
+        });
+      } else {
+        const teacherId = getCurrentTeacherId(student);
+        const teacherName = getTeacherName(teacherId);
+        await createAttendance({
+          studentId: student.id,
+          date: new Date(selectedDate),
+          status,
+          studentName: student.name,
+          teacherId: teacherId || '',
+          teacherName: teacherName,
+        });
       }
 
       await fetchAttendances(user.churchId, selectedDate);
-      setAttendanceDialogOpen(false);
     } catch (error) {
-      console.error('출결 저장 실패:', error);
+      console.error('출결 변경 실패:', error);
     }
-  };
-
-  const handleStudentToggle = (studentId: string) => {
-    const newSelected = new Set(selectedAttendances);
-    if (newSelected.has(studentId)) {
-      newSelected.delete(studentId);
-    } else {
-      newSelected.add(studentId);
-    }
-    setSelectedAttendances(newSelected);
   };
 
   // 선생님 ID로 선생님 이름을 찾는 함수
@@ -293,6 +248,33 @@ export default function AttendancePage() {
         );
       },
     },
+    {
+      id: 'actions',
+      header: '바로 체크',
+      cell: ({ row }) => {
+        const student = students.find(item => item.id === row.original.id);
+        if (!student) return null;
+
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              className="h-11 px-5 text-base"
+              variant={row.original.attendance === AttendanceStatus.PRESENT ? 'default' : 'outline'}
+              onClick={() => handleAttendanceChange(student, AttendanceStatus.PRESENT)}
+            >
+              출석
+            </Button>
+            <Button
+              className="h-11 px-5 text-base"
+              variant={row.original.attendance === AttendanceStatus.ABSENT ? 'default' : 'outline'}
+              onClick={() => handleAttendanceChange(student, AttendanceStatus.ABSENT)}
+            >
+              결석
+            </Button>
+          </div>
+        );
+      },
+    },
   ];
 
   return (
@@ -310,13 +292,13 @@ export default function AttendancePage() {
               <Plus className="mr-2 h-4 w-4" />
               학생 추가
             </Button>
-            <Button
-              onClick={handleOpenAttendanceDialog}
-              className="w-full sm:w-auto"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              출결 체크
-            </Button>
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full sm:w-[180px]"
+              style={{ colorScheme: 'light dark' }}
+            />
           </div>
         </div>
 
@@ -402,24 +384,42 @@ export default function AttendancePage() {
                       </div>
                     </div>
                     <div className="ml-4">
-                      {attendance ? (
+                      <div className="flex flex-col items-end gap-2">
+                        {attendance ? (
+                          <div className="flex items-center gap-2">
+                            {attendance.status === AttendanceStatus.PRESENT ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-red-500" />
+                            )}
+                            <span className={`text-sm ${
+                              attendance.status === AttendanceStatus.PRESENT
+                                ? 'text-green-500'
+                                : 'text-red-500'
+                            }`}>
+                              {attendance.status === AttendanceStatus.PRESENT ? '출석' : '결석'}
+                            </span>
+                          </div>
+                        ) : (
+                          <Badge variant="outline">미등록</Badge>
+                        )}
                         <div className="flex items-center gap-2">
-                          {attendance.status === AttendanceStatus.PRESENT ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <Circle className="h-5 w-5 text-red-500" />
-                          )}
-                          <span className={`text-sm ${
-                            attendance.status === AttendanceStatus.PRESENT
-                              ? 'text-green-500'
-                              : 'text-red-500'
-                          }`}>
-                            {attendance.status === AttendanceStatus.PRESENT ? '출석' : '결석'}
-                          </span>
+                          <Button
+                            className="h-11 px-5 text-base"
+                            variant={attendance?.status === AttendanceStatus.PRESENT ? 'default' : 'outline'}
+                            onClick={() => handleAttendanceChange(student, AttendanceStatus.PRESENT)}
+                          >
+                            출석
+                          </Button>
+                          <Button
+                            className="h-11 px-5 text-base"
+                            variant={attendance?.status === AttendanceStatus.ABSENT ? 'default' : 'outline'}
+                            onClick={() => handleAttendanceChange(student, AttendanceStatus.ABSENT)}
+                          >
+                            결석
+                          </Button>
                         </div>
-                      ) : (
-                        <Badge variant="outline">미등록</Badge>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -437,102 +437,18 @@ export default function AttendancePage() {
       )}
 
       {/* 모바일 출결 체크 FAB */}
-      {isMobile && !attendanceDialogOpen && !studentDialogOpen && (
+      {isMobile && !studentDialogOpen && (
         <>
           <Button
-            className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-50 bg-muted hover:bg-muted/80 border-2 border-primary"
+            className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg z-50 bg-muted hover:bg-muted/80 border-2 border-primary"
             onClick={() => setStudentDialogOpen(true)}
             variant="outline"
             style={{ zIndex: 9999 }}
           >
             <Plus className="h-6 w-6" />
           </Button>
-          <Button
-            className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
-            onClick={handleOpenAttendanceDialog}
-            style={{ zIndex: 9999 }}
-          >
-            <Calendar className="h-6 w-6" />
-          </Button>
         </>
       )}
-
-      {/* 출결 체크 다이얼로그 */}
-      <Dialog open={attendanceDialogOpen} onOpenChange={setAttendanceDialogOpen}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader className="text-center pb-2">
-            <DialogTitle className="text-xl font-bold">📅 출결 체크</DialogTitle>
-            <DialogDescription className="text-base">
-              {selectedDate} 출결 현황
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* 날짜 선택 */}
-          <div className="mb-4">
-            <label className="text-sm font-medium mb-2 block">
-              📅 출결 날짜 선택
-            </label>
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full"
-              style={{ colorScheme: 'light dark' }}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {selectedDate === getKoreanDateString()
-                ? "오늘의 출결을 확인하고 있습니다."
-                : `${new Date(selectedDate).toLocaleDateString('ko-KR')}의 출결을 확인하고 있습니다.`
-              }
-            </p>
-          </div>
-
-          {/* 학생 선택 리스트 */}
-          <div className="max-h-60 overflow-y-auto space-y-2">
-            {students?.map((student) => (
-              <div
-                key={student.id}
-                onClick={() => handleStudentToggle(student.id)}
-                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer ${
-                  selectedAttendances.has(student.id)
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-card border-border'
-                }`}
-              >
-                <span className="font-medium">
-                  {student.name} ({getClubText(student.club)})
-                </span>
-                <CheckCircle
-                  className={`h-5 w-5 ${
-                    selectedAttendances.has(student.id) ? 'text-primary-foreground' : 'text-muted-foreground'
-                  }`}
-                />
-              </div>
-            ))}
-          </div>
-
-          <p className="text-sm text-muted-foreground text-center mt-4 mb-6">
-            출석한 학생을 선택해주세요
-          </p>
-
-          <div className="flex justify-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setAttendanceDialogOpen(false)}
-              className="px-6 py-2"
-            >
-              취소
-            </Button>
-            <Button
-              onClick={handleSaveAttendance}
-              className="px-6 py-2 shadow-md hover:shadow-lg transition-all"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              저장하기
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* 학생 추가 다이얼로그 */}
       <StudentFormDialog

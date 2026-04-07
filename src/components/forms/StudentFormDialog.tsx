@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { StudentFormData, Student } from '../../models/Student';
 import type { User } from '../../models/User';
 import { Club, CLUB_OPTIONS } from '../../constants/clubs';
@@ -74,6 +74,25 @@ export function StudentFormDialog({
 
   // 수정 모드인지 확인
   const isEditMode = !!student;
+
+  const filteredTeachers = useMemo(() => {
+    return teachers.filter((teacher) => teacher.program === studentForm.club)
+  }, [teachers, studentForm.club])
+
+  useEffect(() => {
+    if (!studentForm.assignedTeacherId) return
+
+    const hasAssignedTeacherInClub = filteredTeachers.some(
+      (teacher) => teacher.uid === studentForm.assignedTeacherId
+    )
+
+    if (hasAssignedTeacherInClub) return
+
+    setStudentForm((prev) => ({
+      ...prev,
+      assignedTeacherId: undefined
+    }))
+  }, [filteredTeachers, studentForm.assignedTeacherId])
 
   // 다이얼로그가 열릴 때 학생 데이터로 폼 초기화
   useEffect(() => {
@@ -248,13 +267,18 @@ export function StudentFormDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">미배정</SelectItem>
-                {teachers.map((teacher) => (
+                {filteredTeachers.map((teacher) => (
                   <SelectItem key={teacher.uid} value={teacher.uid}>
                     {teacher.displayName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {filteredTeachers.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                선택된 클럽에 배정된 선생님이 없습니다.
+              </p>
+            )}
           </div>
 
           {/* 학부모 이름 */}

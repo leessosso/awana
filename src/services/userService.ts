@@ -26,15 +26,27 @@ export class UserService {
     }
 
     try {
-      const q = query(
+      const teacherQuery = query(
         collection(db, 'users'),
         where('churchId', '==', churchId),
         where('role', '==', UserRole.TEACHER)
       );
+      const adminQuery = query(
+        collection(db, 'users'),
+        where('churchId', '==', churchId),
+        where('role', '==', UserRole.ADMIN)
+      );
 
-      const querySnapshot = await getDocs(q);
+      const [teacherSnapshot, adminSnapshot] = await Promise.all([
+        getDocs(teacherQuery),
+        getDocs(adminQuery),
+      ]);
+      const queryDocs = [...teacherSnapshot.docs, ...adminSnapshot.docs];
+      const uniqueDocs = Array.from(
+        new Map(queryDocs.map((item) => [item.id, item])).values()
+      );
 
-      return querySnapshot.docs.map((doc) => {
+      return uniqueDocs.map((doc) => {
         const data = doc.data();
         return {
           uid: doc.id,
