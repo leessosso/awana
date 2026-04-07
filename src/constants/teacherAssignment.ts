@@ -6,8 +6,8 @@ export const TEACHER_PROGRAM_OPTIONS: Array<{ value: TeacherProgram, label: stri
 ]
 
 export const TEACHER_TEAM_OPTIONS: Array<{ value: TeacherTeam, label: string }> = [
-  { value: 'yellow', label: '노랑팀' },
   { value: 'green', label: '초록팀' },
+  { value: 'yellow', label: '노랑팀' },
   { value: 'blue', label: '파랑팀' },
   { value: 'red', label: '빨강팀' },
 ]

@@ -32,7 +32,6 @@ import { useAuthStore } from '../../store/authStore'
 import { useAttendanceStore } from '../../store/attendanceStore'
 import { useToast } from '../../hooks/use-toast'
 import { TeacherPosition, UserRole } from '../../models/User'
-import { getTeacherProgramLabel, getTeacherTeamLabel } from '../../constants/teacherAssignment'
 import { userService } from '../../services/userService'
 import { studentService } from '../../services/studentService'
 import { AttendanceStatus } from '../../models/Attendance'
@@ -41,7 +40,7 @@ import { useMobile } from '../../hooks/useMobile'
 import type { User } from '../../models/User'
 import type { Student } from '../../models/Student'
 
-const teamOrder: TeamKey[] = ['yellow', 'green', 'blue', 'red']
+const teamOrder: TeamKey[] = ['green', 'yellow', 'blue', 'red']
 const metricOrder: Array<{
   key: keyof TeamActivityCounts
   label: string
@@ -477,46 +476,14 @@ export default function TeamActivityScorePage () {
       <Card>
         <CardContent className="py-3 px-4">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full max-w-[170px] sm:w-auto"
-                />
-              </div>
-              <div className="flex gap-2 justify-end flex-shrink-0">
-                {currentSession && isAdminUser && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDelete}
-                    disabled={isLoading}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    삭제
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={isLoading || !isEditing || !hasTeacherAssignment || !canEditCurrentProgram}
-                >
-                  {currentSession ? (
-                    <>
-                      <Edit className="h-4 w-4 mr-1" />
-                      수정
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-1" />
-                      저장
-                    </>
-                  )}
-                </Button>
-              </div>
+            <div className="flex items-center gap-2 min-w-0">
+              <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full max-w-[170px] sm:w-auto"
+              />
             </div>
             <div className="flex items-center gap-3 px-3 py-1.5 rounded-md bg-muted/50 border w-fit">
               <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
@@ -563,16 +530,8 @@ export default function TeamActivityScorePage () {
         </Alert>
       )}
 
-      {isScopedTeacher && hasTeacherAssignment && (
-        <Alert>
-          <AlertDescription>
-            내 소속: {getTeacherProgramLabel(teacherProgram)} / {getTeacherTeamLabel(teacherTeam)}
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="flex flex-col gap-4">
-        <div className="order-2 md:order-1">
+        {!isTeacher && (
           <Card className="bg-muted/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">팀 활동 점수 합계</CardTitle>
@@ -603,9 +562,9 @@ export default function TeamActivityScorePage () {
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        <div className="order-1 md:order-2 grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {editableTeams.map((team) => {
             const teamInfo = teamColors[team]
             const teamCounts = getTeamEditableCounts(team)
@@ -643,6 +602,35 @@ export default function TeamActivityScorePage () {
               </Card>
             )
           })}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          {currentSession && isAdminUser && (
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isLoading}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              삭제
+            </Button>
+          )}
+          <Button
+            onClick={handleSave}
+            disabled={isLoading || !isEditing || !hasTeacherAssignment || !canEditCurrentProgram}
+          >
+            {currentSession ? (
+              <>
+                <Edit className="h-4 w-4 mr-1" />
+                수정
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-1" />
+                저장
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -697,7 +685,7 @@ export default function TeamActivityScorePage () {
       {/* 모바일 출결 체크 FAB */}
       {isMobile && !attendanceDialogOpen && (
         <Button
-          className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
+          className="fixed bottom-4 left-4 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
           onClick={handleOpenAttendanceDialog}
           style={{ zIndex: 9999 }}
         >

@@ -17,7 +17,7 @@ export enum TeacherPosition {
 }
 
 export type TeacherProgram = 'Sparks' | 'T&T'
-export type TeacherTeam = 'yellow' | 'green' | 'blue' | 'red'
+export type TeacherTeam = 'green' | 'yellow' | 'blue' | 'red'
 
 export interface User {
   uid: string;

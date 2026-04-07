@@ -1,6 +1,6 @@
 import { Club } from '../constants/clubs'
 
-export type TeamKey = 'red' | 'yellow' | 'blue' | 'green'
+export type TeamKey = 'green' | 'yellow' | 'blue' | 'red'
 
 export type TeamActivityProgram = Club.SPARKS | Club.TNT
 

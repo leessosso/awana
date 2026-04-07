@@ -1,10 +1,10 @@
 import { Club } from '../constants/clubs'
 
 export enum GameTimeTeam {
-  RED = 'red',
+  GREEN = 'green',
   YELLOW = 'yellow',
   BLUE = 'blue',
-  GREEN = 'green',
+  RED = 'red',
 }
 
 export type GameTimeProgram = Club.SPARKS | Club.TNT
@@ -13,7 +13,7 @@ export type GameScore = 400 | 300 | 200 | 100 | 0
 
 export interface ScoreEvent {
   id: string
-  team: 'red' | 'yellow' | 'blue' | 'green'
+  team: 'green' | 'yellow' | 'blue' | 'red'
   score: number
   note?: string
 }
@@ -81,11 +81,11 @@ export function calculateTotalScores(
 
 // 팀 색상 정보
 export const teamColors = {
-  red: {
-    name: '빨강',
-    bgColor: 'bg-red-500',
-    textColor: 'text-red-500',
-    borderColor: 'border-red-500',
+  green: {
+    name: '초록',
+    bgColor: 'bg-green-500',
+    textColor: 'text-green-500',
+    borderColor: 'border-green-500',
   },
   yellow: {
     name: '노랑',
@@ -99,11 +99,11 @@ export const teamColors = {
     textColor: 'text-blue-500',
     borderColor: 'border-blue-500',
   },
-  green: {
-    name: '초록',
-    bgColor: 'bg-green-500',
-    textColor: 'text-green-500',
-    borderColor: 'border-green-500',
+  red: {
+    name: '빨강',
+    bgColor: 'bg-red-500',
+    textColor: 'text-red-500',
+    borderColor: 'border-red-500',
   },
 }
 

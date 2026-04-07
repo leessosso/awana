@@ -9,9 +9,9 @@ import { useAuthStore } from '../../store/authStore'
 import { useGameTimeStore } from '../../store/gameTimeStore'
 import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
 
-type TeamKey = 'red' | 'yellow' | 'blue' | 'green'
+type TeamKey = 'green' | 'yellow' | 'blue' | 'red'
 
-const teamOrder: TeamKey[] = ['yellow', 'green', 'blue', 'red']
+const teamOrder: TeamKey[] = ['green', 'yellow', 'blue', 'red']
 const TEAM_ROLL_DURATION_MS = 2100
 const TEAM_ROLL_GAP_MS = 220
 const TEAM_ROLL_STEP_MS = TEAM_ROLL_DURATION_MS + TEAM_ROLL_GAP_MS

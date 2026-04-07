@@ -93,7 +93,7 @@ export default function GameTimePage() {
 
   // 게임 점수 추가/차감
   const handleAddGameScore = (
-    team: 'red' | 'yellow' | 'blue' | 'green',
+    team: 'green' | 'yellow' | 'blue' | 'red',
     score: number
   ) => {
     const newScoreEvent: ScoreEvent = {
@@ -323,7 +323,7 @@ export default function GameTimePage() {
           </CardHeader>
           <CardContent className="pt-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-              {(['red', 'yellow', 'blue', 'green'] as const).map((team) => {
+              {(['green', 'yellow', 'blue', 'red'] as const).map((team) => {
                 const teamInfo = teamColors[team]
                 return (
                   <div
@@ -418,7 +418,7 @@ export default function GameTimePage() {
         </CardHeader>
         <CardContent className="pt-2">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {(['red', 'yellow', 'blue', 'green'] as const).map((team) => {
+            {(['green', 'yellow', 'blue', 'red'] as const).map((team) => {
               const teamInfo = teamColors[team]
               const total = totals[team]
               const rank = rankings[team]
