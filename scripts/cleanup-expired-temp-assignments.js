@@ -7,10 +7,42 @@
 import admin from 'firebase-admin'
 import fs from 'fs'
 
-// Firebase Admin SDK 초기화
-// 서비스 계정 키 파일이 필요합니다
-// Firebase Console > 프로젝트 설정 > 서비스 계정 > 새 개인 키 생성
-const serviceAccount = JSON.parse(fs.readFileSync('./scripts/serviceAccountKey.json', 'utf8'))
+const SERVICE_ACCOUNT_PATH = './scripts/serviceAccountKey.json'
+
+function loadServiceAccount () {
+  const serviceAccountFromEnv = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+
+  if (serviceAccountFromEnv) {
+    try {
+      return JSON.parse(serviceAccountFromEnv)
+    } catch (err) {
+      throw new Error(`FIREBASE_SERVICE_ACCOUNT_KEY 파싱 실패: ${err.message}`)
+    }
+  }
+
+  if (!fs.existsSync(SERVICE_ACCOUNT_PATH)) {
+    throw new Error(
+      `서비스 계정 키 파일이 없습니다: ${SERVICE_ACCOUNT_PATH}. ` +
+      '파일을 생성하거나 FIREBASE_SERVICE_ACCOUNT_KEY 환경 변수를 설정하세요.'
+    )
+  }
+
+  const raw = fs.readFileSync(SERVICE_ACCOUNT_PATH, 'utf8').trim()
+  if (!raw) {
+    throw new Error(
+      `서비스 계정 키 파일이 비어 있습니다: ${SERVICE_ACCOUNT_PATH}. ` +
+      'GitHub Secret(FIREBASE_SERVICE_ACCOUNT_KEY) 값을 확인하세요.'
+    )
+  }
+
+  try {
+    return JSON.parse(raw)
+  } catch (err) {
+    throw new Error(`서비스 계정 키 JSON 파싱 실패(${SERVICE_ACCOUNT_PATH}): ${err.message}`)
+  }
+}
+
+const serviceAccount = loadServiceAccount()
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),

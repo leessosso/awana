@@ -2,7 +2,7 @@ name: Cleanup Expired Temp Assignments
 
 on:
   schedule:
-    # 매일 새벽 2시 (KST)에 실행 - UTC로는 17:00
+    # 매일 새벽 2시 (KST)에 실행 - UTC 17:00
     - cron: '0 17 * * *'
   workflow_dispatch: # 수동 실행 가능
 
@@ -11,34 +11,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v5
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Install Firebase Admin SDK
-      run: npm install firebase-admin
+      - name: Validate Firebase service account secret
+        env:
+          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: |
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT_KEY}" ]; then
+            echo "FIREBASE_SERVICE_ACCOUNT_KEY secret is empty or missing"
+            exit 1
+          fi
+          node -e "JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)"
 
-    - name: Create service account key file
-      run: |
-        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > scripts/serviceAccountKey.json
-      env:
-        FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+      - name: Run cleanup script
+        run: node scripts/cleanup-expired-temp-assignments.js
+        env:
+          NODE_ENV: production
+          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
 
-    - name: Run cleanup script
-      run: node scripts/cleanup-expired-temp-assignments.js
-      env:
-        NODE_ENV: production
-
-    - name: Send notification on failure
-      if: failure()
-      run: |
-        echo "임시 배정 데이터 정리 작업이 실패했습니다."
-        # 여기에 Slack, Discord 등의 알림을 추가할 수 있습니다
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "임시 배정 데이터 정리 작업이 실패했습니다."
+          # 여기에 Slack, Discord 등의 알림을 추가할 수 있습니다

@@ -127,8 +127,8 @@ Awana LMS는 **만료된 임시 배정 데이터를 자동으로 정리**하는 
 ### 자동 정리 기능
 
 - **실시간 정리**: 학생 데이터를 조회할 때마다 만료된 임시 배정 자동 정리
-- **예약 정리**: 매일 새벽 2시(KST)에 GitHub Actions를 통해 전체 데이터 정리
-- **수동 정리**: 필요시 직접 실행 가능
+- **예약 정리**: 매일 새벽 2시(KST)에 GitHub Actions로 전체 데이터 정리
+- **수동 정리**: GitHub Actions `workflow_dispatch` 또는 로컬 실행 가능
 
 ### 설정 방법
 
@@ -141,23 +141,14 @@ Awana LMS는 **만료된 임시 배정 데이터를 자동으로 정리**하는 
 
 #### 2. GitHub Secrets 설정
 
-GitHub 저장소 → Settings → Secrets and variables → Actions → New repository secret
+GitHub 저장소 -> Settings -> Secrets and variables -> Actions -> New repository secret
 
-**필수 Secrets (Firebase 설정):**
-```
-VITE_FIREBASE_API_KEY = [Firebase API Key]
-VITE_FIREBASE_AUTH_DOMAIN = [Firebase Auth Domain]
-VITE_FIREBASE_PROJECT_ID = [Firebase Project ID]
-VITE_FIREBASE_STORAGE_BUCKET = [Firebase Storage Bucket]
-VITE_FIREBASE_MESSAGING_SENDER_ID = [Firebase Messaging Sender ID]
-VITE_FIREBASE_APP_ID = [Firebase App ID]
-VITE_FIREBASE_MEASUREMENT_ID = [Firebase Measurement ID]
-```
-
-**자동 정리용 Secrets:**
+**자동 정리용 Secret:**
 ```
 FIREBASE_SERVICE_ACCOUNT_KEY = [서비스 계정 키 JSON 내용 전체]
 ```
+
+> Spark 플랜에서는 Functions 배포 없이 GitHub Actions 스케줄 방식으로 운영합니다.
 
 **테스트 모드용 Secrets (선택적):**
 배포 환경에서 자동 로그인을 사용하려면 다음을 추가하세요:
@@ -174,17 +165,17 @@ VITE_TEST_PASSWORD = [테스트용 비밀번호]
 #### 3. 수동 정리 실행
 
 ```bash
-# Firebase Admin SDK 설치
-npm install firebase-admin
-
-# 정리 스크립트 실행
+# 로컬 실행
 node scripts/cleanup-expired-temp-assignments.js
+
+# 또는 GitHub Actions에서 수동 실행
+# Actions -> Cleanup Expired Temp Assignments -> Run workflow
 ```
 
 ### 작동 방식
 
 1. **실시간 정리**: `studentService.getStudentsByChurch()` 호출 시 자동 정리
-2. **예약 정리**: `.github/workflows/cleanup-expired-temp-assignments.yml`에 따라 매일 실행
+2. **예약 정리**: `.github/workflows/cleanup-expired-temp-assignments.yml` 스케줄이 매일 실행
 3. **안전 처리**: 배치 작업으로 대량 데이터 안전하게 처리
 
 ### 모니터링
