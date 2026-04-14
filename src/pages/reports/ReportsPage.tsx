@@ -73,15 +73,6 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">
-          보고서 📊
-        </h1>
-        <p className="text-muted-foreground">
-          다양한 통계와 분석 보고서를 통해 학생들의 성장과 진도를 효과적으로 관리하세요.
-        </p>
-      </div>
-
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {reportCards.map((report, index) => (
           <Card

@@ -196,11 +196,7 @@ export default function GameTimeRevealPage () {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] rounded-xl border bg-gradient-to-b from-background via-muted/30 to-muted/60 p-4 md:p-8 space-y-6 text-foreground dark:from-slate-950 dark:via-slate-900 dark:to-black">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-black">{selectedProgram} 최종 점수 공개</h1>
-          <p className="mt-2 text-muted-foreground">게임시간 + 팀활동 점수 합계</p>
-        </div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
         <div className="flex flex-wrap gap-2 items-center">
           <Input
             type="date"

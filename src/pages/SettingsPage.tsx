@@ -215,13 +215,6 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">설정</h1>
-        <p className="text-muted-foreground mt-2">
-          테마 및 앱 설정을 관리할 수 있습니다.
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>테마 설정</CardTitle>

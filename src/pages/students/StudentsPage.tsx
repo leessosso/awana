@@ -278,17 +278,16 @@ export default function StudentsPage() {
   return (
     <div className="space-y-6">
       {/* 모바일 우선 헤더 */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">
-            {canManageAllStudents ? '학생 관리' : '학생 조회'}
-          </h1>
-          {selectedStudents.size > 0 && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {selectedStudents.size}명의 학생 선택됨
-            </p>
-          )}
-        </div>
+      <div
+        className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 ${
+          selectedStudents.size > 0 ? 'justify-between' : 'sm:justify-end'
+        }`}
+      >
+        {selectedStudents.size > 0 && (
+          <p className="text-sm text-muted-foreground">
+            {selectedStudents.size}명의 학생 선택됨
+          </p>
+        )}
         <div className="flex gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
           {canManageAllStudents && selectedStudents.size > 0 && (
             <>

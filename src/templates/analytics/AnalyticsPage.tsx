@@ -243,13 +243,8 @@ export default function AnalyticsPage() {
         <div className="mb-8">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">초보자용 분석 대시보드</h1>
-              <p className="mt-2 text-muted-foreground">
-                Google Analytics와 Microsoft Clarity로 웹사이트를 분석해보세요.
-              </p>
-
               {/* 분석 도구 상태 표시 */}
-              <div className="mt-4 flex gap-4">
+              <div className="flex gap-4">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <span className="text-sm font-medium">Google Analytics 4</span>

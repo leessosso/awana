@@ -134,9 +134,6 @@ export default function ChurchStatisticsPage() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           뒤로가기
         </Button>
-        <h1 className="text-3xl font-bold">
-          교회 통계 대시보드 📊
-        </h1>
       </div>
 
       {/* 주요 통계 카드 */}

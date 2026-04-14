@@ -228,7 +228,7 @@ export default function StudentHandbookDetailPage() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+      <div className="mb-6">
         <Button
           variant="outline"
           size="sm"
@@ -238,14 +238,6 @@ export default function StudentHandbookDetailPage() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           뒤로
         </Button>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">
-            {student.name} - SPARKS 핸드북
-          </h1>
-          <p className="text-muted-foreground">
-            {student.gender === 'male' ? '남' : '여'}학생
-          </p>
-        </div>
       </div>
 
       {error && (

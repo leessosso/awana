@@ -281,8 +281,7 @@ export default function AttendancePage() {
     <div className="space-y-6">
       {/* 모바일 우선 헤더 */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">출결 관리</h1>
+        <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4">
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
               onClick={() => setStudentDialogOpen(true)}

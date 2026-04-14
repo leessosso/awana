@@ -469,10 +469,6 @@ export default function TeamActivityScorePage () {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">{selectedProgram} 팀 활동 점수</h1>
-      </div>
-
       <Card>
         <CardContent className="py-3 px-4">
           <div className="flex flex-col gap-3">

@@ -390,15 +390,6 @@ export default function HandbookPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-          핸드북 진도
-        </h1>
-        <p className="text-muted-foreground">
-          클럽별로 학생들의 핸드북 진도를 확인하고 관리할 수 있습니다.
-        </p>
-      </div>
-
       {/* 클럽 선택 */}
       <div className="flex items-center gap-4">
         <label className="text-sm font-medium">클럽 선택:</label>

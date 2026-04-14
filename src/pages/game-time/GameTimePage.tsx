@@ -232,10 +232,6 @@ export default function GameTimePage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">{selectedProgram} 게임시간 점수 관리</h1>
-      </div>
-
       {/* 상단 고정 섹션 */}
       <div className="sticky top-4 z-10 space-y-3 bg-background/95 backdrop-blur-sm pb-2 -mx-4 px-4 pt-2">
         {/* 날짜 선택 및 액션 버튼 */}
