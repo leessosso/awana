@@ -35,6 +35,8 @@ export interface TeamActivitySessionFormData {
   teacherEntriesByTeam?: TeamActivityTeacherEntriesByTeam
 }
 
+export const legacyTeacherEntryId = 'legacy'
+
 export const teamActivityScoreRules = {
   attendance: 50,
   handbook: 20,
@@ -99,7 +101,7 @@ export function calculateCountsByTeamFromTeacherEntries (
 
 export function createTeacherEntriesByTeamFromCounts (
   countsByTeam: TeamActivityCountsByTeam,
-  defaultTeacherId = '__legacy__'
+  defaultTeacherId = legacyTeacherEntryId
 ): TeamActivityTeacherEntriesByTeam {
   return {
     red: { [defaultTeacherId]: { ...countsByTeam.red } },

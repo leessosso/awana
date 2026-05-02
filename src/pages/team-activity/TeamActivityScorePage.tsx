@@ -19,6 +19,7 @@ import {
   createEmptyCountsByTeam,
   createEmptyTeacherEntriesByTeam,
   createEmptyTeamActivityCounts,
+  legacyTeacherEntryId,
   normalizeTeamActivitySessionData,
   teamActivityScoreRules,
   type TeamActivityCounts,
@@ -367,7 +368,7 @@ export default function TeamActivityScorePage () {
 
   const getTeacherLabel = (teacherId: string): string => {
     const teacher = teachers.find((item) => item.uid === teacherId)
-    if (!teacher) return teacherId === '__legacy__' ? '기존 데이터' : '알 수 없음'
+    if (!teacher) return teacherId === legacyTeacherEntryId ? '기존 데이터' : '알 수 없음'
     return teacher.displayName || teacher.loginId || teacher.email || teacherId
   }
 
