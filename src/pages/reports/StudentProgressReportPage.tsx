@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import {
   Select,
@@ -16,7 +16,13 @@ import { useAttendanceStore } from '../../store/attendanceStore';
 import { AttendanceStatus } from '../../models';
 import { Club } from '../../constants';
 import { SparksHandbook, JewelType } from '../../models/SparksHandbookProgress';
+import type { JewelSection } from '../../models/SparksHandbookProgress';
 import { generateJewelSections, sectionToString } from '../../constants/sparksHandbooks';
+import {
+  createSparksAchievementCardFilename,
+  downloadPdf,
+  generateSparksAchievementCardPdf,
+} from '../../lib/pdf/generateSparksAchievementCardPdf';
 
 export default function StudentProgressReportPage() {
   const navigate = useNavigate();
@@ -28,10 +34,16 @@ export default function StudentProgressReportPage() {
 
   const [loading, setLoading] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState(studentId || '');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState('');
 
   const student = students?.find((s) => s.id === selectedStudentId);
   const progress = selectedStudentId ? studentProgresses.get(selectedStudentId) || [] : [];
   const studentAttendance = attendanceRecords.filter(a => a.studentId === selectedStudentId);
+  const sparksStudents = useMemo(
+    () => students?.filter(s => s.club === Club.SPARKS) || [],
+    [students]
+  );
 
   useEffect(() => {
     if (user?.churchId) {
@@ -52,8 +64,16 @@ export default function StudentProgressReportPage() {
     }
   }, [students, attendanceRecords]);
 
+  useEffect(() => {
+    if (!selectedStudentId && sparksStudents.length > 0) {
+      const firstStudent = sparksStudents[0];
+      setSelectedStudentId(firstStudent.id);
+      navigate(`/reports/student-progress/${firstStudent.id}`, { replace: true });
+    }
+  }, [selectedStudentId, sparksStudents, navigate]);
+
   // 특정 섹션의 완료 날짜 가져오기
-  const getSectionDate = (handbook: SparksHandbook, jewelType: JewelType, section: any): string => {
+  const getSectionDate = (handbook: SparksHandbook, jewelType: JewelType, section: JewelSection): string => {
     const progressItem = progress.find(
       (p) =>
         p.handbook === handbook &&
@@ -80,8 +100,34 @@ export default function StudentProgressReportPage() {
     window.print();
   };
 
+  const handleDownloadPdf = async () => {
+    if (!student) {
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    setPdfError('');
+
+    try {
+      const pdfBytes = await generateSparksAchievementCardPdf({
+        student,
+        progress,
+        attendance: studentAttendance,
+        churchName: user?.churchName,
+      });
+
+      downloadPdf(pdfBytes, createSparksAchievementCardFilename(student.name));
+    } catch (error) {
+      console.error('Sparks 성취기록카드 PDF 생성 실패:', error);
+      setPdfError(error instanceof Error ? error.message : 'PDF 생성에 실패했습니다.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const handleStudentChange = (newStudentId: string) => {
     setSelectedStudentId(newStudentId);
+    setPdfError('');
     navigate(`/reports/student-progress/${newStudentId}`, { replace: true });
   };
 
@@ -89,14 +135,6 @@ export default function StudentProgressReportPage() {
     return (
       <div className="flex justify-center items-center min-h-96">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!student) {
-    return (
-      <div className="flex justify-center items-center min-h-96">
-        <p className="text-muted-foreground">학생을 선택해주세요.</p>
       </div>
     );
   }
@@ -114,7 +152,6 @@ export default function StudentProgressReportPage() {
         </Button>
 
         <div className="w-full sm:w-48">
-          <label className="text-sm font-medium mb-2 block">학생 선택</label>
           <Select
             value={selectedStudentId}
             onValueChange={handleStudentChange}
@@ -123,7 +160,7 @@ export default function StudentProgressReportPage() {
               <SelectValue placeholder="학생 선택" />
             </SelectTrigger>
             <SelectContent>
-              {students?.filter(s => s.club === Club.SPARKS).map((student) => (
+              {sparksStudents.map((student) => (
                 <SelectItem key={student.id} value={student.id}>
                   {student.name}
                 </SelectItem>
@@ -136,9 +173,26 @@ export default function StudentProgressReportPage() {
           <Printer className="w-4 h-4 mr-2" />
           인쇄
         </Button>
+
+        <Button onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
+          <Download className="w-4 h-4 mr-2" />
+          {isGeneratingPdf ? 'PDF 생성 중...' : '공식 PDF 다운로드'}
+        </Button>
+
+        {pdfError && (
+          <p className="text-sm text-red-600">{pdfError}</p>
+        )}
       </div>
 
-      {/* 인쇄용 컨테이너 */}
+      {!student && (
+        <div className="flex justify-center items-center min-h-96">
+          <p className="text-muted-foreground">
+            {sparksStudents.length > 0 ? '학생을 선택해주세요.' : 'Sparks 학생이 없습니다.'}
+          </p>
+        </div>
+      )}
+
+      {student && (
       <div className="bg-white p-4 max-w-[210mm] mx-auto print:p-2 print:max-w-full print:m-0">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-2 pb-1 border-b-2 border-black">
@@ -310,6 +364,7 @@ export default function StudentProgressReportPage() {
           </p>
         </div>
       </div>
+      )}
 
       {/* 인쇄 스타일 */}
       <style>{`
