@@ -260,9 +260,11 @@ export async function getCurrentUser(): Promise<User | null> {
     return null
   }
 
+  const currentAuth = auth
+
   // Wait for the initial auth state to be resolved
   const firebaseUser = await new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(currentAuth, (user) => {
       unsubscribe()
       resolve(user)
     })
