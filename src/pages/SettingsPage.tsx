@@ -1,131 +1,179 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
-import { ThemeSelector } from '../components/ui/ThemeSelector';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Alert, AlertDescription } from '../components/ui/Alert';
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '../components/ui/Card'
+import { ThemeSelector } from '../components/ui/ThemeSelector'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Alert, AlertDescription } from '../components/ui/Alert'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../components/ui/select';
-import { useAuthStore } from '../store/authStore';
-import { userService } from '../services/userService';
-import { createTeacherAccount } from '../services/teacherAccountService';
-import { updateCurrentUserPassword } from '../services/authService';
-import type { User } from '../models/User';
-import { TeacherPosition, type TeacherProgram, type TeacherTeam } from '../models/User';
-import { TEACHER_POSITIONS, getPositionLabel } from '../constants/teacherPositions';
+} from '../components/ui/select'
+import { useAuthStore } from '../store/authStore'
+import * as userService from '../services/userService'
+import { createTeacherAccount } from '../services/teacherAccountService'
+import { updateCurrentUserPassword } from '../services/authService'
+import type { User } from '../models/User'
+import {
+  TeacherPosition,
+  type TeacherProgram,
+  type TeacherTeam,
+} from '../models/User'
+import {
+  TEACHER_POSITIONS,
+  getPositionLabel,
+} from '../constants/teacherPositions'
 import {
   TEACHER_PROGRAM_OPTIONS,
   TEACHER_TEAM_OPTIONS,
   getTeacherProgramLabel,
   getTeacherTeamLabel,
-} from '../constants/teacherAssignment';
-import { canManageUsers } from '../utils/permissions';
-import { normalizeLoginInput } from '../utils/loginIdentity';
+} from '../constants/teacherAssignment'
+import { canManageUsers } from '../utils/permissions'
+import { normalizeLoginInput } from '../utils/loginIdentity'
 
-const INITIAL_TEACHER_PASSWORD = '123456';
-const DEFAULT_TEACHER_PROGRAM: TeacherProgram = 'Sparks';
-const DEFAULT_TEACHER_TEAM: TeacherTeam = 'yellow';
+const INITIAL_TEACHER_PASSWORD = '123456'
+const DEFAULT_TEACHER_PROGRAM: TeacherProgram = 'Sparks'
+const DEFAULT_TEACHER_TEAM: TeacherTeam = 'yellow'
 
 export default function SettingsPage() {
-  const { user } = useAuthStore();
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordSuccessMessage, setPasswordSuccessMessage] = useState<string | null>(null);
+  const { user } = useAuthStore()
+  const [teachers, setTeachers] = useState<User[]>([])
+  const [isLoadingTeachers, setIsLoadingTeachers] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSuccessMessage, setPasswordSuccessMessage] = useState<
+    string | null
+  >(null)
 
-  const [displayName, setDisplayName] = useState('');
-  const [position, setPosition] = useState<TeacherPosition>(TeacherPosition.ASSISTANT);
-  const [program, setProgram] = useState<TeacherProgram | ''>(DEFAULT_TEACHER_PROGRAM);
-  const [team, setTeam] = useState<TeacherTeam | ''>(DEFAULT_TEACHER_TEAM);
-  const [headTeacherId, setHeadTeacherId] = useState('');
-  const [isSavingTeacherId, setIsSavingTeacherId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState('')
+  const [position, setPosition] = useState<TeacherPosition>(
+    TeacherPosition.ASSISTANT,
+  )
+  const [program, setProgram] = useState<TeacherProgram | ''>(
+    DEFAULT_TEACHER_PROGRAM,
+  )
+  const [team, setTeam] = useState<TeacherTeam | ''>(DEFAULT_TEACHER_TEAM)
+  const [headTeacherId, setHeadTeacherId] = useState('')
+  const [isSavingTeacherId, setIsSavingTeacherId] = useState<string | null>(
+    null,
+  )
   const [editingAssignments, setEditingAssignments] = useState<
-    Record<string, {
-      position: TeacherPosition
-      program?: TeacherProgram
-      team?: TeacherTeam
-      headTeacherId?: string
-    }>
-  >({});
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    Record<
+      string,
+      {
+        position: TeacherPosition
+        program?: TeacherProgram
+        team?: TeacherTeam
+        headTeacherId?: string
+      }
+    >
+  >({})
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
 
-  const isUserManager = canManageUsers(user);
-  const canRenderTeacherSettings = isUserManager && !!user?.churchId;
-  const previewLoginId = normalizeLoginInput(displayName);
-  const headTeacherOptions = teachers.filter((teacher) => teacher.position === TeacherPosition.HEAD_TEACHER);
+  const isUserManager = canManageUsers(user)
+  const canRenderTeacherSettings = isUserManager && !!user?.churchId
+  const previewLoginId = normalizeLoginInput(displayName)
+  const headTeacherOptions = teachers.filter(
+    (teacher) => teacher.position === TeacherPosition.HEAD_TEACHER,
+  )
 
   const loadTeachers = useCallback(async () => {
     if (!user?.churchId || !canRenderTeacherSettings) {
-      return;
+      return
     }
 
-    setIsLoadingTeachers(true);
+    setIsLoadingTeachers(true)
     try {
-      const teacherList = await userService.getTeachersByChurch(user.churchId);
-      setTeachers(teacherList);
+      const teacherList = await userService.getTeachersByChurch(user.churchId)
+      setTeachers(teacherList)
       setEditingAssignments(
-        teacherList.reduce((acc, teacher) => ({
-          ...acc,
-          [teacher.uid]: {
-            position: teacher.position || TeacherPosition.ASSISTANT,
-            program: teacher.program,
-            team: teacher.team,
-            headTeacherId: teacher.headTeacherId,
-          },
-        }), {} as Record<string, {
-          position: TeacherPosition
-          program?: TeacherProgram
-          team?: TeacherTeam
-          headTeacherId?: string
-        }>)
-      );
+        teacherList.reduce(
+          (acc, teacher) => ({
+            ...acc,
+            [teacher.uid]: {
+              position: teacher.position || TeacherPosition.ASSISTANT,
+              program: teacher.program,
+              team: teacher.team,
+              headTeacherId: teacher.headTeacherId,
+            },
+          }),
+          {} as Record<
+            string,
+            {
+              position: TeacherPosition
+              program?: TeacherProgram
+              team?: TeacherTeam
+              headTeacherId?: string
+            }
+          >,
+        ),
+      )
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : '선생님 목록을 불러오지 못했습니다.');
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : '선생님 목록을 불러오지 못했습니다.',
+      )
     } finally {
-      setIsLoadingTeachers(false);
+      setIsLoadingTeachers(false)
     }
-  }, [canRenderTeacherSettings, user?.churchId]);
+  }, [canRenderTeacherSettings, user?.churchId])
 
   useEffect(() => {
-    void loadTeachers();
-  }, [loadTeachers]);
+    void loadTeachers()
+  }, [loadTeachers])
 
   const handleCreateTeacher = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    setSuccessMessage(null);
+    event.preventDefault()
+    setError(null)
+    setSuccessMessage(null)
 
-    const currentUser = user;
-    if (!canRenderTeacherSettings || !currentUser?.churchId || !currentUser?.churchName) {
-      setError('관리자 권한이 필요합니다.');
-      return;
+    const currentUser = user
+    if (
+      !canRenderTeacherSettings ||
+      !currentUser?.churchId ||
+      !currentUser?.churchName
+    ) {
+      setError('관리자 권한이 필요합니다.')
+      return
     }
 
-    const normalizedName = displayName.trim().normalize('NFC');
+    const normalizedName = displayName.trim().normalize('NFC')
     if (!/^[a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ._-]{2,30}$/i.test(normalizedName)) {
-      setError('이름(로그인 아이디)은 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.');
-      return;
+      setError(
+        '이름(로그인 아이디)은 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.',
+      )
+      return
     }
 
     const normalizedHeadTeacherId =
-      position === TeacherPosition.ASSISTANT ? (headTeacherId || undefined) : undefined;
+      position === TeacherPosition.ASSISTANT
+        ? headTeacherId || undefined
+        : undefined
     const normalizedProgram =
-      position === TeacherPosition.OPERATIONS_TEACHER ? undefined : (program || undefined);
+      position === TeacherPosition.OPERATIONS_TEACHER
+        ? undefined
+        : program || undefined
     const normalizedTeam =
-      position === TeacherPosition.OPERATIONS_TEACHER ? undefined : (team || undefined);
+      position === TeacherPosition.OPERATIONS_TEACHER
+        ? undefined
+        : team || undefined
 
-    setIsCreating(true);
+    setIsCreating(true)
     try {
       const createdTeacher = await createTeacherAccount({
         displayName: normalizedName,
@@ -137,81 +185,91 @@ export default function SettingsPage() {
         program: normalizedProgram,
         team: normalizedTeam,
         headTeacherId: normalizedHeadTeacherId,
-      });
-      setDisplayName('');
-      setPosition(TeacherPosition.ASSISTANT);
-      setProgram(DEFAULT_TEACHER_PROGRAM);
-      setTeam(DEFAULT_TEACHER_TEAM);
-      setHeadTeacherId('');
+      })
+      setDisplayName('')
+      setPosition(TeacherPosition.ASSISTANT)
+      setProgram(DEFAULT_TEACHER_PROGRAM)
+      setTeam(DEFAULT_TEACHER_TEAM)
+      setHeadTeacherId('')
       setSuccessMessage(
-        `${createdTeacher.displayName} 선생님 계정을 생성했습니다. 로그인 아이디는 ${createdTeacher.loginId}이고, 초기 비밀번호는 ${INITIAL_TEACHER_PASSWORD} 입니다.`
-      );
-      await loadTeachers();
+        `${createdTeacher.displayName} 선생님 계정을 생성했습니다. 로그인 아이디는 ${createdTeacher.loginId}이고, 초기 비밀번호는 ${INITIAL_TEACHER_PASSWORD} 입니다.`,
+      )
+      await loadTeachers()
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : '선생님 계정 생성에 실패했습니다.');
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : '선생님 계정 생성에 실패했습니다.',
+      )
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
-  };
+  }
 
   const handleSaveTeacherAssignment = async (teacher: User) => {
-    const assignment = editingAssignments[teacher.uid];
+    const assignment = editingAssignments[teacher.uid]
     if (!assignment) {
-      setError('수정할 선생님 정보를 찾을 수 없습니다.');
-      return;
+      setError('수정할 선생님 정보를 찾을 수 없습니다.')
+      return
     }
 
-    setError(null);
-    setSuccessMessage(null);
-    setIsSavingTeacherId(teacher.uid);
+    setError(null)
+    setSuccessMessage(null)
+    setIsSavingTeacherId(teacher.uid)
     try {
-      await userService.updateTeacherAssignment(teacher.uid, assignment);
-      setSuccessMessage(`${teacher.displayName} 선생님의 소속 정보를 저장했습니다.`);
-      await loadTeachers();
+      await userService.updateTeacherAssignment(teacher.uid, assignment)
+      setSuccessMessage(
+        `${teacher.displayName} 선생님의 소속 정보를 저장했습니다.`,
+      )
+      await loadTeachers()
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : '선생님 정보 저장에 실패했습니다.');
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : '선생님 정보 저장에 실패했습니다.',
+      )
     } finally {
-      setIsSavingTeacherId(null);
+      setIsSavingTeacherId(null)
     }
-  };
+  }
 
   const handleChangePassword = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPasswordError(null);
-    setPasswordSuccessMessage(null);
+    event.preventDefault()
+    setPasswordError(null)
+    setPasswordSuccessMessage(null)
 
     if (!currentPassword || !newPassword || !confirmNewPassword) {
-      setPasswordError('모든 비밀번호 항목을 입력해주세요.');
-      return;
+      setPasswordError('모든 비밀번호 항목을 입력해주세요.')
+      return
     }
 
     if (newPassword !== confirmNewPassword) {
-      setPasswordError('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.');
-      return;
+      setPasswordError('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.')
+      return
     }
 
     if (newPassword.length < 6) {
-      setPasswordError('새 비밀번호는 6자 이상이어야 합니다.');
-      return;
+      setPasswordError('새 비밀번호는 6자 이상이어야 합니다.')
+      return
     }
 
-    setIsChangingPassword(true);
+    setIsChangingPassword(true)
     try {
-      await updateCurrentUserPassword(currentPassword, newPassword);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmNewPassword('');
-      setPasswordSuccessMessage('비밀번호가 변경되었습니다.');
+      await updateCurrentUserPassword(currentPassword, newPassword)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmNewPassword('')
+      setPasswordSuccessMessage('비밀번호가 변경되었습니다.')
     } catch (passwordUpdateError) {
       setPasswordError(
         passwordUpdateError instanceof Error
           ? passwordUpdateError.message
-          : '비밀번호 변경에 실패했습니다.'
-      );
+          : '비밀번호 변경에 실패했습니다.',
+      )
     } finally {
-      setIsChangingPassword(false);
+      setIsChangingPassword(false)
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -237,10 +295,15 @@ export default function SettingsPage() {
         <CardContent>
           {(passwordError || passwordSuccessMessage) && (
             <Alert variant={passwordError ? 'destructive' : 'default'}>
-              <AlertDescription>{passwordError || passwordSuccessMessage}</AlertDescription>
+              <AlertDescription>
+                {passwordError || passwordSuccessMessage}
+              </AlertDescription>
             </Alert>
           )}
-          <form className="grid gap-4 md:grid-cols-2 mt-4" onSubmit={handleChangePassword}>
+          <form
+            className="grid gap-4 md:grid-cols-2 mt-4"
+            onSubmit={handleChangePassword}
+          >
             <Input
               type="password"
               placeholder="현재 비밀번호"
@@ -267,7 +330,11 @@ export default function SettingsPage() {
               required
             />
             <div className="md:col-span-2">
-              <Button type="submit" variant="secondary" disabled={isChangingPassword}>
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={isChangingPassword}
+              >
                 {isChangingPassword ? '변경 중...' : '내 비밀번호 변경'}
               </Button>
             </div>
@@ -287,11 +354,15 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>선생님 계정 등록</CardTitle>
               <CardDescription>
-                이름을 입력하면 로그인 아이디가 자동으로 생성되고, 초기 비밀번호는 고정값으로 설정됩니다.
+                이름을 입력하면 로그인 아이디가 자동으로 생성되고, 초기
+                비밀번호는 고정값으로 설정됩니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreateTeacher}>
+              <form
+                className="grid gap-4 md:grid-cols-2"
+                onSubmit={handleCreateTeacher}
+              >
                 <div className="space-y-2">
                   <label className="text-sm font-medium">선생님 이름</label>
                   <Input
@@ -311,17 +382,17 @@ export default function SettingsPage() {
                 <Select
                   value={position}
                   onValueChange={(value) => {
-                    const nextPosition = value as TeacherPosition;
-                    setPosition(nextPosition);
+                    const nextPosition = value as TeacherPosition
+                    setPosition(nextPosition)
                     if (nextPosition !== TeacherPosition.ASSISTANT) {
-                      setHeadTeacherId('');
+                      setHeadTeacherId('')
                     }
                     if (nextPosition === TeacherPosition.OPERATIONS_TEACHER) {
-                      setProgram('');
-                      setTeam('');
+                      setProgram('')
+                      setTeam('')
                     } else if (!program || !team) {
-                      setProgram(DEFAULT_TEACHER_PROGRAM);
-                      setTeam(DEFAULT_TEACHER_TEAM);
+                      setProgram(DEFAULT_TEACHER_PROGRAM)
+                      setTeam(DEFAULT_TEACHER_TEAM)
                     }
                   }}
                 >
@@ -338,7 +409,9 @@ export default function SettingsPage() {
                 </Select>
                 <Select
                   value={headTeacherId || 'none'}
-                  onValueChange={(value) => setHeadTeacherId(value === 'none' ? '' : value)}
+                  onValueChange={(value) =>
+                    setHeadTeacherId(value === 'none' ? '' : value)
+                  }
                   disabled={position !== TeacherPosition.ASSISTANT}
                 >
                   <SelectTrigger>
@@ -355,7 +428,11 @@ export default function SettingsPage() {
                 </Select>
                 <Select
                   value={program || 'none'}
-                  onValueChange={(value) => setProgram(value === 'none' ? '' : (value as TeacherProgram))}
+                  onValueChange={(value) =>
+                    setProgram(
+                      value === 'none' ? '' : (value as TeacherProgram),
+                    )
+                  }
                   disabled={position === TeacherPosition.OPERATIONS_TEACHER}
                 >
                   <SelectTrigger>
@@ -372,7 +449,9 @@ export default function SettingsPage() {
                 </Select>
                 <Select
                   value={team || 'none'}
-                  onValueChange={(value) => setTeam(value === 'none' ? '' : (value as TeacherTeam))}
+                  onValueChange={(value) =>
+                    setTeam(value === 'none' ? '' : (value as TeacherTeam))
+                  }
                   disabled={position === TeacherPosition.OPERATIONS_TEACHER}
                 >
                   <SelectTrigger>
@@ -393,7 +472,8 @@ export default function SettingsPage() {
                   </Button>
                 </div>
                 <div className="md:col-span-2 rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-                  생성 후 안내: 1) 이름(로그인 아이디)과 초기 비밀번호 전달 2) 첫 로그인 후 설정에서 비밀번호 변경 안내
+                  생성 후 안내: 1) 이름(로그인 아이디)과 초기 비밀번호 전달 2)
+                  첫 로그인 후 설정에서 비밀번호 변경 안내
                 </div>
               </form>
             </CardContent>
@@ -403,13 +483,20 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>계정 변경 안내</CardTitle>
               <CardDescription>
-                Spark 플랜에서는 서버 함수 없이 타인 비밀번호를 직접 변경할 수 없습니다.
+                Spark 플랜에서는 서버 함수 없이 타인 비밀번호를 직접 변경할 수
+                없습니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-                <li>아이디/비밀번호 변경이 필요하면 새 계정을 생성해서 안내해주세요.</li>
-                <li>Blaze 플랜 전환 후 Cloud Functions를 사용하면 관리자 수정 기능을 안전하게 추가할 수 있습니다.</li>
+                <li>
+                  아이디/비밀번호 변경이 필요하면 새 계정을 생성해서
+                  안내해주세요.
+                </li>
+                <li>
+                  Blaze 플랜 전환 후 Cloud Functions를 사용하면 관리자 수정
+                  기능을 안전하게 추가할 수 있습니다.
+                </li>
               </ul>
             </CardContent>
           </Card>
@@ -425,7 +512,9 @@ export default function SettingsPage() {
               {isLoadingTeachers ? (
                 <p className="text-sm text-muted-foreground">불러오는 중...</p>
               ) : teachers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">등록된 선생님 계정이 없습니다.</p>
+                <p className="text-sm text-muted-foreground">
+                  등록된 선생님 계정이 없습니다.
+                </p>
               ) : (
                 <div className="space-y-2">
                   {teachers.map((teacher) => (
@@ -440,8 +529,14 @@ export default function SettingsPage() {
                             로그인 아이디: {teacher.loginId || teacher.email}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            현재: {teacher.position ? getPositionLabel(teacher.position) : '직책 미지정'} / {getTeacherProgramLabel(teacher.program)} / {getTeacherTeamLabel(teacher.team)}
-                            {teacher.position === TeacherPosition.ASSISTANT && teacher.headTeacherId
+                            현재:{' '}
+                            {teacher.position
+                              ? getPositionLabel(teacher.position)
+                              : '직책 미지정'}{' '}
+                            / {getTeacherProgramLabel(teacher.program)} /{' '}
+                            {getTeacherTeamLabel(teacher.team)}
+                            {teacher.position === TeacherPosition.ASSISTANT &&
+                            teacher.headTeacherId
                               ? ` / 소속 담임: ${teachers.find((t) => t.uid === teacher.headTeacherId)?.displayName || '알 수 없음'}`
                               : ''}
                           </p>
@@ -452,28 +547,41 @@ export default function SettingsPage() {
                           disabled={isSavingTeacherId === teacher.uid}
                           onClick={() => handleSaveTeacherAssignment(teacher)}
                         >
-                          {isSavingTeacherId === teacher.uid ? '저장 중...' : '정보 저장'}
+                          {isSavingTeacherId === teacher.uid
+                            ? '저장 중...'
+                            : '정보 저장'}
                         </Button>
                       </div>
                       <div className="grid gap-2 md:grid-cols-3">
                         <Select
-                          value={editingAssignments[teacher.uid]?.position || TeacherPosition.ASSISTANT}
+                          value={
+                            editingAssignments[teacher.uid]?.position ||
+                            TeacherPosition.ASSISTANT
+                          }
                           onValueChange={(value) =>
                             setEditingAssignments((prev) => ({
                               ...prev,
                               [teacher.uid]: {
                                 position: value as TeacherPosition,
                                 program:
-                                  (value as TeacherPosition) === TeacherPosition.OPERATIONS_TEACHER
+                                  (value as TeacherPosition) ===
+                                  TeacherPosition.OPERATIONS_TEACHER
                                     ? undefined
-                                    : (prev[teacher.uid]?.program || teacher.program || DEFAULT_TEACHER_PROGRAM),
+                                    : prev[teacher.uid]?.program ||
+                                      teacher.program ||
+                                      DEFAULT_TEACHER_PROGRAM,
                                 team:
-                                  (value as TeacherPosition) === TeacherPosition.OPERATIONS_TEACHER
+                                  (value as TeacherPosition) ===
+                                  TeacherPosition.OPERATIONS_TEACHER
                                     ? undefined
-                                    : (prev[teacher.uid]?.team || teacher.team || DEFAULT_TEACHER_TEAM),
+                                    : prev[teacher.uid]?.team ||
+                                      teacher.team ||
+                                      DEFAULT_TEACHER_TEAM,
                                 headTeacherId:
-                                  (value as TeacherPosition) === TeacherPosition.ASSISTANT
-                                    ? prev[teacher.uid]?.headTeacherId || teacher.headTeacherId
+                                  (value as TeacherPosition) ===
+                                  TeacherPosition.ASSISTANT
+                                    ? prev[teacher.uid]?.headTeacherId ||
+                                      teacher.headTeacherId
                                     : undefined,
                               },
                             }))
@@ -491,19 +599,37 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                         <Select
-                          value={editingAssignments[teacher.uid]?.headTeacherId || 'none'}
+                          value={
+                            editingAssignments[teacher.uid]?.headTeacherId ||
+                            'none'
+                          }
                           onValueChange={(value) =>
                             setEditingAssignments((prev) => ({
                               ...prev,
                               [teacher.uid]: {
-                                position: prev[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT,
-                                program: prev[teacher.uid]?.program || teacher.program || DEFAULT_TEACHER_PROGRAM,
-                                team: prev[teacher.uid]?.team || teacher.team || DEFAULT_TEACHER_TEAM,
-                                headTeacherId: value === 'none' ? undefined : value,
+                                position:
+                                  prev[teacher.uid]?.position ||
+                                  teacher.position ||
+                                  TeacherPosition.ASSISTANT,
+                                program:
+                                  prev[teacher.uid]?.program ||
+                                  teacher.program ||
+                                  DEFAULT_TEACHER_PROGRAM,
+                                team:
+                                  prev[teacher.uid]?.team ||
+                                  teacher.team ||
+                                  DEFAULT_TEACHER_TEAM,
+                                headTeacherId:
+                                  value === 'none' ? undefined : value,
                               },
                             }))
                           }
-                          disabled={(editingAssignments[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT) !== TeacherPosition.ASSISTANT}
+                          disabled={
+                            (editingAssignments[teacher.uid]?.position ||
+                              teacher.position ||
+                              TeacherPosition.ASSISTANT) !==
+                            TeacherPosition.ASSISTANT
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="소속 담임" />
@@ -520,19 +646,34 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                         <Select
-                          value={editingAssignments[teacher.uid]?.program || 'none'}
+                          value={
+                            editingAssignments[teacher.uid]?.program || 'none'
+                          }
                           onValueChange={(value) =>
                             setEditingAssignments((prev) => ({
                               ...prev,
                               [teacher.uid]: {
-                                position: prev[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT,
-                                program: value === 'none' ? undefined : (value as TeacherProgram),
+                                position:
+                                  prev[teacher.uid]?.position ||
+                                  teacher.position ||
+                                  TeacherPosition.ASSISTANT,
+                                program:
+                                  value === 'none'
+                                    ? undefined
+                                    : (value as TeacherProgram),
                                 team: prev[teacher.uid]?.team || teacher.team,
-                                headTeacherId: prev[teacher.uid]?.headTeacherId || teacher.headTeacherId,
+                                headTeacherId:
+                                  prev[teacher.uid]?.headTeacherId ||
+                                  teacher.headTeacherId,
                               },
                             }))
                           }
-                          disabled={(editingAssignments[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT) === TeacherPosition.OPERATIONS_TEACHER}
+                          disabled={
+                            (editingAssignments[teacher.uid]?.position ||
+                              teacher.position ||
+                              TeacherPosition.ASSISTANT) ===
+                            TeacherPosition.OPERATIONS_TEACHER
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="클럽 선택 (운영 선생님은 없음)" />
@@ -547,19 +688,37 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                         <Select
-                          value={editingAssignments[teacher.uid]?.team || 'none'}
+                          value={
+                            editingAssignments[teacher.uid]?.team || 'none'
+                          }
                           onValueChange={(value) =>
                             setEditingAssignments((prev) => ({
                               ...prev,
                               [teacher.uid]: {
-                                position: prev[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT,
-                                program: prev[teacher.uid]?.program || teacher.program || DEFAULT_TEACHER_PROGRAM,
-                                team: value === 'none' ? undefined : (value as TeacherTeam),
-                                headTeacherId: prev[teacher.uid]?.headTeacherId || teacher.headTeacherId,
+                                position:
+                                  prev[teacher.uid]?.position ||
+                                  teacher.position ||
+                                  TeacherPosition.ASSISTANT,
+                                program:
+                                  prev[teacher.uid]?.program ||
+                                  teacher.program ||
+                                  DEFAULT_TEACHER_PROGRAM,
+                                team:
+                                  value === 'none'
+                                    ? undefined
+                                    : (value as TeacherTeam),
+                                headTeacherId:
+                                  prev[teacher.uid]?.headTeacherId ||
+                                  teacher.headTeacherId,
                               },
                             }))
                           }
-                          disabled={(editingAssignments[teacher.uid]?.position || teacher.position || TeacherPosition.ASSISTANT) === TeacherPosition.OPERATIONS_TEACHER}
+                          disabled={
+                            (editingAssignments[teacher.uid]?.position ||
+                              teacher.position ||
+                              TeacherPosition.ASSISTANT) ===
+                            TeacherPosition.OPERATIONS_TEACHER
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="팀 선택 (운영 선생님은 없음)" />
@@ -591,6 +750,5 @@ export default function SettingsPage() {
         </Alert>
       )}
     </div>
-  );
+  )
 }
-

@@ -82,14 +82,7 @@ function getAttendanceStatusText(status: AttendanceStatus) {
   return status === AttendanceStatus.PRESENT ? 'O' : 'X'
 }
 
-function drawText({
-  page,
-  font,
-  text,
-  x,
-  y,
-  size = 7,
-}: DrawTextParams) {
+function drawText({ page, font, text, x, y, size = 7 }: DrawTextParams) {
   if (!text) {
     return
   }
@@ -107,20 +100,78 @@ function drawStudentInfo(
   page: PDFPage,
   font: PDFFont,
   student: Student,
-  churchName = ''
+  churchName = '',
 ) {
-  drawText({ page, font, text: student.name, ...sparksStudentLayout.name, size: 8 })
-  drawText({ page, font, text: student.gender === 'male' ? 'O' : '', ...sparksStudentLayout.genderMale, size: 8 })
-  drawText({ page, font, text: student.gender === 'female' ? 'O' : '', ...sparksStudentLayout.genderFemale, size: 8 })
-  drawText({ page, font, text: formatBirthDate(student.birthDate), ...sparksStudentLayout.birthDate, size: 7 })
-  drawText({ page, font, text: churchName, ...sparksStudentLayout.churchName, size: 7 })
-  drawText({ page, font, text: student.address || '', ...sparksStudentLayout.address, size: 7 })
-  drawText({ page, font, text: student.parentName || '', ...sparksStudentLayout.parentName, size: 7 })
-  drawText({ page, font, text: student.parentPhone || '', ...sparksStudentLayout.parentPhone, size: 7 })
-  drawText({ page, font, text: formatBirthDate(student.createdAt), ...sparksStudentLayout.clubRegisteredDate, size: 7 })
+  drawText({
+    page,
+    font,
+    text: student.name,
+    ...sparksStudentLayout.name,
+    size: 8,
+  })
+  drawText({
+    page,
+    font,
+    text: student.gender === 'male' ? 'O' : '',
+    ...sparksStudentLayout.genderMale,
+    size: 8,
+  })
+  drawText({
+    page,
+    font,
+    text: student.gender === 'female' ? 'O' : '',
+    ...sparksStudentLayout.genderFemale,
+    size: 8,
+  })
+  drawText({
+    page,
+    font,
+    text: formatBirthDate(student.birthDate),
+    ...sparksStudentLayout.birthDate,
+    size: 7,
+  })
+  drawText({
+    page,
+    font,
+    text: churchName,
+    ...sparksStudentLayout.churchName,
+    size: 7,
+  })
+  drawText({
+    page,
+    font,
+    text: student.address || '',
+    ...sparksStudentLayout.address,
+    size: 7,
+  })
+  drawText({
+    page,
+    font,
+    text: student.parentName || '',
+    ...sparksStudentLayout.parentName,
+    size: 7,
+  })
+  drawText({
+    page,
+    font,
+    text: student.parentPhone || '',
+    ...sparksStudentLayout.parentPhone,
+    size: 7,
+  })
+  drawText({
+    page,
+    font,
+    text: formatBirthDate(student.createdAt),
+    ...sparksStudentLayout.clubRegisteredDate,
+    size: 7,
+  })
 }
 
-function drawAttendance(page: PDFPage, font: PDFFont, attendance: Attendance[]) {
+function drawAttendance(
+  page: PDFPage,
+  font: PDFFont,
+  attendance: Attendance[],
+) {
   const latestByMonthWeek = new Map<string, Attendance>()
 
   attendance.forEach((record) => {
@@ -148,7 +199,10 @@ function drawAttendance(page: PDFPage, font: PDFFont, attendance: Attendance[]) 
     }
 
     const week = getAttendanceWeek(record.date)
-    const y = sparksAttendanceLayout.startY - (monthIndex * sparksAttendanceLayout.monthGap) - ((week - 1) * sparksAttendanceLayout.weekGap)
+    const y =
+      sparksAttendanceLayout.startY -
+      monthIndex * sparksAttendanceLayout.monthGap -
+      (week - 1) * sparksAttendanceLayout.weekGap
 
     drawText({
       page,
@@ -169,12 +223,16 @@ function drawAttendance(page: PDFPage, font: PDFFont, attendance: Attendance[]) 
   })
 }
 
-function drawProgress(page: PDFPage, font: PDFFont, progress: JewelSectionProgress[]) {
+function drawProgress(
+  page: PDFPage,
+  font: PDFFont,
+  progress: JewelSectionProgress[],
+) {
   progress.forEach((progressItem) => {
     const position = getSparksSectionPosition(
       progressItem.handbook,
       progressItem.jewelType,
-      progressItem.section
+      progressItem.section,
     )
 
     drawText({

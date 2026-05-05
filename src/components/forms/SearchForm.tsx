@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
-import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
-import { useTrackSearch } from '../../analytics';
+import React, { useState } from 'react'
+import { Input } from '../ui/Input'
+import { Button } from '../ui/Button'
+import { useTrackSearch } from '../../analytics'
 
 interface SearchFormProps {
-  onSearch: (query: string, filters?: Record<string, unknown>) => void;
-  placeholder?: string;
+  onSearch: (query: string, filters?: Record<string, unknown>) => void
+  placeholder?: string
   filters?: {
-    key: string;
-    label: string;
-    options: { value: string; label: string }[];
-  }[];
-  className?: string;
+    key: string
+    label: string
+    options: { value: string; label: string }[]
+  }[]
+  className?: string
 }
 
 export function SearchForm({
@@ -20,32 +20,32 @@ export function SearchForm({
   filters = [],
   className = '',
 }: SearchFormProps) {
-  const trackSearch = useTrackSearch();
-  const [query, setQuery] = useState('');
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
-  const [showFilters, setShowFilters] = useState(false);
+  const trackSearch = useTrackSearch()
+  const [query, setQuery] = useState('')
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [showFilters, setShowFilters] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(query, activeFilters);
+    e.preventDefault()
+    onSearch(query, activeFilters)
     // Google Analytics: 검색 이벤트 추적
     if (query.trim()) {
-      trackSearch(query.trim());
+      trackSearch(query.trim())
     }
-  };
+  }
 
   const handleFilterChange = (filterKey: string, value: string) => {
-    setActiveFilters(prev => ({
+    setActiveFilters((prev) => ({
       ...prev,
       [filterKey]: value,
-    }));
-  };
+    }))
+  }
 
   const clearFilters = () => {
-    setActiveFilters({});
-    setQuery('');
-    onSearch('', {});
-  };
+    setActiveFilters({})
+    setQuery('')
+    onSearch('', {})
+  }
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -57,9 +57,7 @@ export function SearchForm({
           placeholder={placeholder}
           className="flex-1"
         />
-        <Button type="submit">
-          검색
-        </Button>
+        <Button type="submit">검색</Button>
         {filters.length > 0 && (
           <Button
             type="button"
@@ -81,7 +79,9 @@ export function SearchForm({
                 </label>
                 <select
                   value={activeFilters[filter.key] || ''}
-                  onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange(filter.key, e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">전체</option>
@@ -107,5 +107,5 @@ export function SearchForm({
         </div>
       )}
     </div>
-  );
+  )
 }

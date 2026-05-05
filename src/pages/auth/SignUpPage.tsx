@@ -1,40 +1,45 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Alert, AlertDescription } from '../../components/ui/Alert';
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
+import { useAuthStore } from '../../store/authStore'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/Card'
+import { Alert, AlertDescription } from '../../components/ui/Alert'
 
 export default function SignUpPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [churchName, setChurchName] = useState('');
-  const [churchAddress, setChurchAddress] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const navigate = useNavigate();
-  const { signUp, isLoading, error, clearError } = useAuthStore();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [churchName, setChurchName] = useState('')
+  const [churchAddress, setChurchAddress] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const navigate = useNavigate()
+  const { signUp, isLoading, error, clearError } = useAuthStore()
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearError();
+    e.preventDefault()
+    clearError()
 
     if (password !== confirmPassword) {
-      useAuthStore.setState({ error: '비밀번호가 일치하지 않습니다.' });
-      return;
+      useAuthStore.setState({ error: '비밀번호가 일치하지 않습니다.' })
+      return
     }
 
     try {
-      await signUp(email, password, displayName, churchName, churchAddress);
-      navigate('/');
+      await signUp(email, password, displayName, churchName, churchAddress)
+      navigate('/')
     } catch {
       // 에러는 store에서 처리됨
     }
-  };
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -179,16 +184,15 @@ export default function SignUpPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || !email || !password || !displayName || !churchName}
+              disabled={
+                isLoading || !email || !password || !displayName || !churchName
+              }
             >
               {isLoading ? '회원가입 중...' : '회원가입'}
             </Button>
 
             <div className="text-center text-sm">
-              <Link
-                to="/login"
-                className="text-primary hover:underline"
-              >
+              <Link to="/login" className="text-primary hover:underline">
                 이미 계정이 있으신가요? 로그인
               </Link>
             </div>
@@ -196,5 +200,5 @@ export default function SignUpPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

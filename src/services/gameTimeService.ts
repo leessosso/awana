@@ -18,20 +18,21 @@ import type {
 } from '../models/GameTimeScore'
 import { calculateTotalScores } from '../models/GameTimeScore'
 
-export class GameTimeService {
-  async createGameTimeSession(
+export async function createGameTimeSession(
     sessionData: GameTimeSessionFormData,
     createdBy: string,
-    churchId: string
+    churchId: string,
   ): Promise<GameTimeSession> {
     if (!isFirebaseConfigured() || !db) {
-      throw new Error('Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.')
+      throw new Error(
+        'Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.',
+      )
     }
 
     try {
       const totalScores = calculateTotalScores(
         sessionData.gameScores || [],
-        sessionData.cheerScores || []
+        sessionData.cheerScores || [],
       )
 
       const docRef = await addDoc(collection(db, 'gameTimeSessions'), {
@@ -64,12 +65,14 @@ export class GameTimeService {
     }
   }
 
-  async updateGameTimeSession(
+export async function updateGameTimeSession(
     sessionId: string,
-    sessionData: Partial<GameTimeSessionFormData>
+    sessionData: Partial<GameTimeSessionFormData>,
   ): Promise<void> {
     if (!isFirebaseConfigured() || !db) {
-      throw new Error('Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.')
+      throw new Error(
+        'Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.',
+      )
     }
 
     try {
@@ -83,17 +86,22 @@ export class GameTimeService {
         updateData.program = sessionData.program
       }
 
-      if (sessionData.gameScores !== undefined || sessionData.cheerScores !== undefined) {
+      if (
+        sessionData.gameScores !== undefined ||
+        sessionData.cheerScores !== undefined
+      ) {
         // 기존 데이터 가져오기
         const existingDoc = await getDoc(doc(db, 'gameTimeSessions', sessionId))
         const existingData = existingDoc.data()
 
-        const gameScores = sessionData.gameScores !== undefined
-          ? sessionData.gameScores
-          : existingData?.gameScores || []
-        const cheerScores = sessionData.cheerScores !== undefined
-          ? sessionData.cheerScores
-          : existingData?.cheerScores || []
+        const gameScores =
+          sessionData.gameScores !== undefined
+            ? sessionData.gameScores
+            : existingData?.gameScores || []
+        const cheerScores =
+          sessionData.cheerScores !== undefined
+            ? sessionData.cheerScores
+            : existingData?.cheerScores || []
 
         if (sessionData.gameScores !== undefined) {
           updateData.gameScores = sessionData.gameScores
@@ -111,9 +119,11 @@ export class GameTimeService {
     }
   }
 
-  async deleteGameTimeSession(sessionId: string): Promise<void> {
+export async function deleteGameTimeSession(sessionId: string): Promise<void> {
     if (!isFirebaseConfigured() || !db) {
-      throw new Error('Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.')
+      throw new Error(
+        'Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.',
+      )
     }
 
     try {
@@ -124,10 +134,10 @@ export class GameTimeService {
     }
   }
 
-  async getGameTimeSessionByDate(
+export async function getGameTimeSessionByDate(
     date: Date,
     churchId: string,
-    program: GameTimeProgram
+    program: GameTimeProgram,
   ): Promise<GameTimeSession | null> {
     if (!isFirebaseConfigured() || !db) {
       return null
@@ -137,7 +147,7 @@ export class GameTimeService {
       // 먼저 해당 교회의 모든 세션 데이터를 가져옴 (단일 필드 쿼리만 사용)
       const q = query(
         collection(db, 'gameTimeSessions'),
-        where('churchId', '==', churchId)
+        where('churchId', '==', churchId),
       )
       const querySnapshot = await getDocs(q)
 
@@ -151,11 +161,14 @@ export class GameTimeService {
             id: doc.id,
             ...data,
             program: data.program || 'Sparks', // 기본값 (하위 호환성)
-            gameScores: data.gameScores || data.games?.map((_g: any, idx: number) => ({
-              id: `game-${idx}`,
-              team: 'red' as const,
-              score: 0,
-            })) || [],
+            gameScores:
+              data.gameScores ||
+              data.games?.map((_g: any, idx: number) => ({
+                id: `game-${idx}`,
+                team: 'red' as const,
+                score: 0,
+              })) ||
+              [],
             cheerScores: data.cheerScores || [],
             date:
               data.date instanceof Timestamp
@@ -181,7 +194,7 @@ export class GameTimeService {
           error.message.includes('not found'))
       ) {
         console.warn(
-          '게임시간 세션 데이터가 없거나 인덱스 생성이 필요합니다. 빈 데이터를 반환합니다.'
+          '게임시간 세션 데이터가 없거나 인덱스 생성이 필요합니다. 빈 데이터를 반환합니다.',
         )
         return null
       }
@@ -189,8 +202,8 @@ export class GameTimeService {
     }
   }
 
-  async getGameTimeSessionsByChurch(
-    churchId: string
+export async function getGameTimeSessionsByChurch(
+    churchId: string,
   ): Promise<GameTimeSession[]> {
     if (!isFirebaseConfigured() || !db) {
       return []
@@ -199,7 +212,7 @@ export class GameTimeService {
     try {
       const q = query(
         collection(db, 'gameTimeSessions'),
-        where('churchId', '==', churchId)
+        where('churchId', '==', churchId),
       )
       const querySnapshot = await getDocs(q)
 
@@ -208,11 +221,14 @@ export class GameTimeService {
         return {
           id: doc.id,
           ...data,
-          gameScores: data.gameScores || data.games?.map((_g: any, idx: number) => ({
-            id: `game-${idx}`,
-            team: 'red' as const,
-            score: 0,
-          })) || [],
+          gameScores:
+            data.gameScores ||
+            data.games?.map((_g: any, idx: number) => ({
+              id: `game-${idx}`,
+              team: 'red' as const,
+              score: 0,
+            })) ||
+            [],
           cheerScores: data.cheerScores || [],
           date:
             data.date instanceof Timestamp
@@ -229,6 +245,4 @@ export class GameTimeService {
       throw error
     }
   }
-}
 
-export const gameTimeService = new GameTimeService()

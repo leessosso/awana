@@ -356,7 +356,7 @@ npm run dev
 ##### CTA 버튼 변경
 ```tsx
 // 섹션 컴포넌트에서 링크 변경
-<a href="https://customer-site.com" className="btn-primary">
+<a href="https://customer-site.com" className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-primary-foreground bg-primary shadow-[0_4px_14px_0_rgb(var(--color-primary)/0.4)] transition hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/60">
   고객사 사이트 방문
 </a>
 ```

@@ -7,14 +7,17 @@ import {
   query,
   where,
   Timestamp,
-} from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../config/firebase';
-import type { Church } from '../models/Church';
+} from 'firebase/firestore'
+import { db, isFirebaseConfigured } from '../config/firebase'
+import type { Church } from '../models/Church'
 
-export class ChurchService {
-  async createChurch(name: string, address: string, createdBy: string): Promise<Church> {
+export async function createChurch(
+    name: string,
+    address: string,
+    createdBy: string,
+  ): Promise<Church> {
     if (!isFirebaseConfigured() || !db) {
-      throw new Error('Firebase가 설정되지 않았습니다.');
+      throw new Error('Firebase가 설정되지 않았습니다.')
     }
 
     try {
@@ -23,7 +26,7 @@ export class ChurchService {
         address,
         createdAt: Timestamp.now(),
         createdBy,
-      });
+      })
 
       const church: Church = {
         id: docRef.id,
@@ -31,27 +34,27 @@ export class ChurchService {
         address,
         createdAt: new Date(),
         createdBy,
-      };
+      }
 
-      return church;
+      return church
     } catch (error) {
-      console.error('교회 생성 실패:', error);
-      throw error;
+      console.error('교회 생성 실패:', error)
+      throw error
     }
   }
 
-  async getChurch(churchId: string): Promise<Church | null> {
+export async function getChurch(churchId: string): Promise<Church | null> {
     if (!isFirebaseConfigured() || !db) {
-      return null;
+      return null
     }
 
     try {
-      const docSnap = await getDoc(doc(db, 'churches', churchId));
+      const docSnap = await getDoc(doc(db, 'churches', churchId))
       if (!docSnap.exists()) {
-        return null;
+        return null
       }
 
-      const data = docSnap.data();
+      const data = docSnap.data()
       return {
         id: docSnap.id,
         ...data,
@@ -59,31 +62,31 @@ export class ChurchService {
           data.createdAt instanceof Timestamp
             ? data.createdAt.toDate()
             : new Date(data.createdAt),
-      } as Church;
+      } as Church
     } catch (error) {
-      console.error('교회 정보 가져오기 실패:', error);
-      throw error;
+      console.error('교회 정보 가져오기 실패:', error)
+      throw error
     }
   }
 
-  async findChurchByName(churchName: string): Promise<Church | null> {
+export async function findChurchByName(churchName: string): Promise<Church | null> {
     if (!isFirebaseConfigured() || !db) {
-      return null;
+      return null
     }
 
     try {
       const q = query(
         collection(db, 'churches'),
-        where('name', '==', churchName)
-      );
-      const querySnapshot = await getDocs(q);
+        where('name', '==', churchName),
+      )
+      const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
-        return null;
+        return null
       }
 
-      const doc = querySnapshot.docs[0];
-      const data = doc.data();
+      const doc = querySnapshot.docs[0]
+      const data = doc.data()
       return {
         id: doc.id,
         ...data,
@@ -91,12 +94,10 @@ export class ChurchService {
           data.createdAt instanceof Timestamp
             ? data.createdAt.toDate()
             : new Date(data.createdAt),
-      } as Church;
+      } as Church
     } catch (error) {
-      console.error('교회 검색 실패:', error);
-      throw error;
+      console.error('교회 검색 실패:', error)
+      throw error
     }
   }
-}
 
-export const churchService = new ChurchService();

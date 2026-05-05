@@ -41,12 +41,12 @@ export const sparksProgressLayout = {
 export function getSparksSectionPosition(
   handbook: SparksHandbook,
   jewelType: JewelType,
-  section: JewelSection
+  section: JewelSection,
 ) {
   const origin = sparksProgressLayout[handbook][jewelType]
 
   return {
-    x: origin.x + ((section.minor - 1) * 49.6),
-    y: origin.y - ((section.major - 1) * 16),
+    x: origin.x + (section.minor - 1) * 49.6,
+    y: origin.y - (section.major - 1) * 16,
   }
 }

@@ -90,7 +90,12 @@
   }
 
   body {
-    @apply min-h-screen font-body text-base antialiased;
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     background-color: rgb(var(--color-background));
     color: rgb(var(--color-foreground));
     /* 모바일 우선 터치 스크롤 개선 */
@@ -119,116 +124,8 @@
   h4,
   h5,
   h6 {
-    @apply font-display;
+    font-family: 'Inter', system-ui, sans-serif;
     color: rgb(var(--color-foreground));
-  }
-}
-
-@layer components {
-  /* 모바일 우선 컨테이너 - 작은 화면에서 최대한 공간 활용 */
-  .container-section {
-    @apply mx-auto w-full px-4;
-    max-width: 1280px;
-  }
-
-  /* 태블릿 이상에서 패딩 증가 */
-  @media (min-width: 640px) {
-    .container-section {
-      @apply px-6;
-    }
-  }
-
-  /* 데스크톱에서 더 넓은 컨테이너 */
-  @media (min-width: 1024px) {
-    .container-section {
-      @apply px-8;
-    }
-  }
-
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-[rgb(var(--color-primary-foreground))] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2;
-    background-color: rgb(var(--color-primary));
-    box-shadow: 0 4px 14px 0 rgb(var(--color-primary) / 0.4);
-  }
-
-  .btn-primary:hover {
-    background-color: rgb(var(--color-primary) / 0.9);
-  }
-
-  .btn-primary:focus-visible {
-    outline-color: rgb(var(--color-primary) / 0.6);
-  }
-
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2;
-    background-color: rgb(var(--color-muted));
-    color: rgb(var(--color-foreground));
-    border-color: rgb(var(--color-border));
-  }
-
-  .btn-secondary:hover {
-    background-color: rgb(var(--color-muted) / 0.8);
-  }
-
-  .btn-secondary:focus-visible {
-    outline-color: rgb(var(--color-border) / 0.6);
-  }
-
-  .card-surface {
-    @apply rounded-3xl p-6;
-    background-color: rgb(var(--color-card));
-    color: rgb(var(--color-card-foreground));
-    border-color: rgb(var(--color-border));
-    border-width: 1px;
-    box-shadow: 0 20px 50px -20px rgb(var(--color-background) / 0.9);
-  }
-
-  /* 모바일에서 카드 패딩 조정 */
-  @media (min-width: 640px) {
-    .card-surface {
-      @apply p-8;
-    }
-  }
-
-  .surface-muted {
-    @apply rounded-3xl;
-    background-color: rgb(var(--color-muted));
-    border-color: rgb(var(--color-border));
-    border-width: 1px;
-  }
-
-  /* 모바일 우선 터치 타겟 크기 보장 */
-  .touch-target {
-    @apply min-h-[44px] min-w-[44px];
-  }
-
-  /* 모바일에서 스크롤 개선 */
-  .mobile-scroll {
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: rgb(var(--color-border)) transparent;
-  }
-
-  /* 모바일에서 숨김 처리 */
-  .mobile-hidden {
-    @apply block;
-  }
-
-  @media (max-width: 639px) {
-    .mobile-hidden {
-      @apply hidden;
-    }
-  }
-
-  /* 데스크톱에서만 표시 */
-  .desktop-only {
-    @apply hidden;
-  }
-
-  @media (min-width: 1024px) {
-    .desktop-only {
-      @apply block;
-    }
   }
 }
 

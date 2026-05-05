@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,22 +9,22 @@ import {
   type SortingState,
   type ColumnFiltersState,
   type ColumnDef,
-} from '@tanstack/react-table';
+} from '@tanstack/react-table'
 
 export interface TableData {
-  id: string;
-  [key: string]: unknown;
+  id: string
+  [key: string]: unknown
 }
 
 interface DataTableProps<T extends TableData> {
-  data: T[];
-  columns: ColumnDef<T, unknown>[];
-  searchable?: boolean;
-  sortable?: boolean;
-  paginated?: boolean;
-  pageSize?: number;
-  className?: string;
-  onRowClick?: (row: T) => void;
+  data: T[]
+  columns: ColumnDef<T, unknown>[]
+  searchable?: boolean
+  sortable?: boolean
+  paginated?: boolean
+  pageSize?: number
+  className?: string
+  onRowClick?: (row: T) => void
 }
 
 export function DataTable<T extends TableData>({
@@ -37,13 +37,15 @@ export function DataTable<T extends TableData>({
   className = '',
   onRowClick,
 }: DataTableProps<T>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState('');
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
+  )
+  const [globalFilter, setGlobalFilter] = React.useState('')
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: pageSize,
-  });
+  })
 
   const table = useReactTable({
     data,
@@ -64,7 +66,7 @@ export function DataTable<T extends TableData>({
     },
     ...(sortable && { enableSorting: true }),
     ...(paginated && { enablePagination: true }),
-  });
+  })
 
   return (
     <div className={`w-full ${className}`}>
@@ -97,9 +99,9 @@ export function DataTable<T extends TableData>({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       {sortable && header.column.getCanSort() && (
                         <span className="text-xs">
                           {header.column.getIsSorted() === 'asc' ? '↑' : ''}
@@ -139,11 +141,10 @@ export function DataTable<T extends TableData>({
         <div className="flex items-center justify-between mt-4 px-4 py-3 bg-background border-t border-border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>
-              {table.getState().pagination.pageIndex + 1} / {table.getPageCount()} 페이지
+              {table.getState().pagination.pageIndex + 1} /{' '}
+              {table.getPageCount()} 페이지
             </span>
-            <span>
-              전체 {data.length}개 항목
-            </span>
+            <span>전체 {data.length}개 항목</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -164,6 +165,5 @@ export function DataTable<T extends TableData>({
         </div>
       )}
     </div>
-  );
+  )
 }
-

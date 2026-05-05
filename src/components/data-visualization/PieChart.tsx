@@ -5,22 +5,22 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
+} from 'recharts'
 
 export interface PieChartData {
-  name: string;
-  value: number;
-  color?: string;
+  name: string
+  value: number
+  color?: string
 }
 
 interface PieChartProps {
-  data: PieChartData[];
-  height?: number;
-  showLegend?: boolean;
-  showTooltip?: boolean;
-  innerRadius?: number;
-  outerRadius?: number;
-  className?: string;
+  data: PieChartData[]
+  height?: number
+  showLegend?: boolean
+  showTooltip?: boolean
+  innerRadius?: number
+  outerRadius?: number
+  className?: string
 }
 
 const COLORS = [
@@ -34,7 +34,7 @@ const COLORS = [
   '#ff7300',
   '#00ff88',
   '#ff0088',
-];
+]
 
 export function PieChart({
   data,
@@ -48,7 +48,7 @@ export function PieChart({
   const chartData = data.map((item, index) => ({
     ...item,
     color: item.color || COLORS[index % COLORS.length],
-  }));
+  }))
 
   return (
     <div className={`w-full ${className}`} style={{ height }}>
@@ -59,7 +59,9 @@ export function PieChart({
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, percent }) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
+            label={({ name, percent }) =>
+              `${name} ${((percent as number) * 100).toFixed(0)}%`
+            }
             outerRadius={outerRadius}
             innerRadius={innerRadius}
             fill="#8884d8"
@@ -92,5 +94,5 @@ export function PieChart({
         </RechartsPieChart>
       </ResponsiveContainer>
     </div>
-  );
+  )
 }

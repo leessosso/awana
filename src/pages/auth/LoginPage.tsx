@@ -1,57 +1,68 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
-import { UserRole } from '../../models/User';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
-import { Alert, AlertDescription } from '../../components/ui/Alert';
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
+import { useAuthStore } from '../../store/authStore'
+import { UserRole } from '../../models/User'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '../../components/ui/Card'
+import { Alert, AlertDescription } from '../../components/ui/Alert'
 
 export default function LoginPage() {
-  const [loginId, setLoginId] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
-  const { signIn, isLoading, error, clearError, user, isAuthenticated } = useAuthStore();
+  const [loginId, setLoginId] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
+  const { signIn, isLoading, error, clearError, user, isAuthenticated } =
+    useAuthStore()
 
   // 로그인 성공 후 역할에 따른 리다이렉트
   useEffect(() => {
     if (isAuthenticated && user) {
       // 관리자는 게임타임으로, 다른 선생님들은 팀활동점수로
-      const redirectPath = user.role === UserRole.ADMIN ? '/game-time' : '/team-activity-score';
-      navigate(redirectPath, { replace: true });
+      const redirectPath =
+        user.role === UserRole.ADMIN ? '/game-time' : '/team-activity-score'
+      navigate(redirectPath, { replace: true })
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate])
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearError();
-    const normalizedLoginId = loginId.trim();
+    e.preventDefault()
+    clearError()
+    const normalizedLoginId = loginId.trim()
     if (!normalizedLoginId) {
-      return;
+      return
     }
     try {
-      await signIn(normalizedLoginId, password);
+      await signIn(normalizedLoginId, password)
       // 리다이렉트는 useEffect에서 처리됨
     } catch {
       // 에러는 store에서 처리됨
     }
-  };
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl">AWANA LMS</CardTitle>
-          <CardDescription>선생님은 이름, 관리자는 이메일로 로그인하세요</CardDescription>
+          <CardDescription>
+            선생님은 이름, 관리자는 이메일로 로그인하세요
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <Alert>
               <AlertDescription className="text-sm">
-                선생님 신규 계정은 <span className="font-medium">초기 비밀번호 123456</span>으로 로그인한 뒤,
-                설정에서 바로 비밀번호를 변경해주세요.
+                선생님 신규 계정은{' '}
+                <span className="font-medium">초기 비밀번호 123456</span>으로
+                로그인한 뒤, 설정에서 바로 비밀번호를 변경해주세요.
               </AlertDescription>
             </Alert>
 
@@ -126,16 +137,14 @@ export default function LoginPage() {
             </Button>
 
             <div className="text-center text-sm">
-              <Link
-                to="/signup"
-                className="text-primary hover:underline"
-              >
+              <Link to="/signup" className="text-primary hover:underline">
                 계정이 없으신가요? 회원가입
               </Link>
             </div>
 
             <p className="text-center text-xs text-muted-foreground">
-              로그인 문제가 있으면 관리자에게 이름 표기(예: 김민수A)와 초기 비밀번호를 확인하세요.
+              로그인 문제가 있으면 관리자에게 이름 표기(예: 김민수A)와 초기
+              비밀번호를 확인하세요.
             </p>
 
             <details className="rounded-md border px-3 py-2 text-sm">
@@ -154,5 +163,5 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

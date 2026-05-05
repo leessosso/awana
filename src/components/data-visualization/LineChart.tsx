@@ -7,27 +7,27 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
+} from 'recharts'
 
 export interface LineChartData {
-  name: string;
-  [key: string]: number | string;
+  name: string
+  [key: string]: number | string
 }
 
 interface LineChartProps {
-  data: LineChartData[];
+  data: LineChartData[]
   lines: {
-    dataKey: string;
-    stroke: string;
-    name?: string;
-    strokeWidth?: number;
-  }[];
-  height?: number;
-  showGrid?: boolean;
-  showLegend?: boolean;
-  showTooltip?: boolean;
-  xAxisKey?: string;
-  className?: string;
+    dataKey: string
+    stroke: string
+    name?: string
+    strokeWidth?: number
+  }[]
+  height?: number
+  showGrid?: boolean
+  showLegend?: boolean
+  showTooltip?: boolean
+  xAxisKey?: string
+  className?: string
 }
 
 export function LineChart({
@@ -43,7 +43,10 @@ export function LineChart({
   return (
     <div className={`w-full ${className}`} style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <RechartsLineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <RechartsLineChart
+          data={data}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
           {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
           <XAxis
             dataKey={xAxisKey}
@@ -85,5 +88,5 @@ export function LineChart({
         </RechartsLineChart>
       </ResponsiveContainer>
     </div>
-  );
+  )
 }

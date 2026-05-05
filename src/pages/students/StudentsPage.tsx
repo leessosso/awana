@@ -1,195 +1,192 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
+import { useLoaderData, useRevalidator } from 'react-router-dom'
 import {
   Plus as AddIcon,
   Search as SearchIcon,
   Users as UsersIcon,
   Clock as ClockIcon,
-} from 'lucide-react';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Alert, AlertDescription } from '../../components/ui/Alert';
-import { Badge } from '../../components/ui/Badge';
-import { useStudentStore } from '../../store/studentStore';
-import { useAuthStore } from '../../store/authStore';
-import { userService } from '../../services/userService';
-import { canManageChurchData } from '../../utils/permissions';
-import { Club } from '../../constants';
-import type { Student, StudentFormData } from '../../models/Student';
-import type { User } from '../../models/User';
-import { StudentFormDialog } from '../../components/forms';
-import { StudentCard } from '../../components/students';
+} from 'lucide-react'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Alert, AlertDescription } from '../../components/ui/Alert'
+import { Badge } from '../../components/ui/Badge'
+import { useStudentStore } from '../../store/studentStore'
+import { useAuthStore } from '../../store/authStore'
+import { canManageChurchData } from '../../utils/permissions'
+import { Club } from '../../constants'
+import type { Student, StudentFormData } from '../../models/Student'
+import type { User } from '../../models/User'
+import { StudentFormDialog } from '../../components/forms'
+import { StudentCard } from '../../components/students'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '../../components/ui/dialog';
+} from '../../components/ui/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select';
-import { Checkbox } from '../../components/ui/checkbox';
+} from '../../components/ui/select'
+import { Checkbox } from '../../components/ui/checkbox'
 
 export default function StudentsPage() {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
   const {
-    students,
     isLoading,
     error,
-    fetchStudents,
     deleteStudent,
-    createStudent
-  } = useStudentStore();
+    createStudent,
+  } = useStudentStore()
+  
+  const loaderData = useLoaderData() as { students: Student[], teachers: User[] } | null
+  const revalidator = useRevalidator()
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
-  const [tempAssignmentDialogOpen, setTempAssignmentDialogOpen] = useState(false);
-  const [studentTransferDialogOpen, setStudentTransferDialogOpen] = useState(false);
-  const [studentDialogOpen, setStudentDialogOpen] = useState(false);
-  const [tempTeacherId, setTempTeacherId] = useState('');
-  const [tempEndDate, setTempEndDate] = useState('');
-  const [fromTeacherId, setFromTeacherId] = useState('');
-  const [toTeacherId, setToTeacherId] = useState('');
-  const [transferStudents, setTransferStudents] = useState<Set<string>>(new Set());
-  const [transferEndDate, setTransferEndDate] = useState('');
-  const [editStudent, setEditStudent] = useState<Student | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const canManageAllStudents = canManageChurchData(user);
+  const students = loaderData?.students || []
+  const teachers = loaderData?.teachers || []
 
-  // 선생님 목록 가져오기
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      if (user?.churchId) {
-        try {
-          const teacherList = await userService.getTeachersByChurch(user.churchId);
-          setTeachers(teacherList);
-        } catch (error) {
-          console.error('선생님 목록 가져오기 실패:', error);
-        }
-      }
-    };
-    fetchTeachers();
-  }, [user?.churchId]);
-
-  useEffect(() => {
-    if (user?.churchId) {
-      fetchStudents();
-    }
-  }, [user?.churchId, fetchStudents]);
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filteredStudents, setFilteredStudents] = useState<Student[]>([])
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(
+    new Set(),
+  )
+  const [tempAssignmentDialogOpen, setTempAssignmentDialogOpen] =
+    useState(false)
+  const [studentTransferDialogOpen, setStudentTransferDialogOpen] =
+    useState(false)
+  const [studentDialogOpen, setStudentDialogOpen] = useState(false)
+  const [tempTeacherId, setTempTeacherId] = useState('')
+  const [tempEndDate, setTempEndDate] = useState('')
+  const [fromTeacherId, setFromTeacherId] = useState('')
+  const [toTeacherId, setToTeacherId] = useState('')
+  const [transferStudents, setTransferStudents] = useState<Set<string>>(
+    new Set(),
+  )
+  const [transferEndDate, setTransferEndDate] = useState('')
+  const [editStudent, setEditStudent] = useState<Student | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const canManageAllStudents = canManageChurchData(user)
 
   // 선생님 ID로 선생님 이름을 찾는 함수
   const getTeacherName = (teacherId?: string) => {
-    if (!teacherId) return '미배정';
-    const teacher = teachers.find(t => t.uid === teacherId);
-    return teacher?.displayName || '알 수 없음';
-  };
+    if (!teacherId) return '미배정'
+    const teacher = teachers.find((t) => t.uid === teacherId)
+    return teacher?.displayName || '알 수 없음'
+  }
 
   // 학생의 현재 담당 선생님 ID를 가져오는 함수
-  const getCurrentTeacherId = (student: { tempAssignedTeacherId?: string; tempAssignedUntil?: Date | string; assignedTeacherId?: string }) => {
+  const getCurrentTeacherId = (student: {
+    tempAssignedTeacherId?: string
+    tempAssignedUntil?: Date | string
+    assignedTeacherId?: string
+  }) => {
     // 임시 담당 선생님이 있고, 임시 담당 종료일이 아직 지나지 않은 경우
     if (student.tempAssignedTeacherId && student.tempAssignedUntil) {
-      const now = new Date();
-      const tempUntil = student.tempAssignedUntil instanceof Date ? student.tempAssignedUntil : new Date(student.tempAssignedUntil);
+      const now = new Date()
+      const tempUntil =
+        student.tempAssignedUntil instanceof Date
+          ? student.tempAssignedUntil
+          : new Date(student.tempAssignedUntil)
       if (tempUntil >= now) {
-        return student.tempAssignedTeacherId;
+        return student.tempAssignedTeacherId
       }
     }
     // 기본 담당 선생님
-    return student.assignedTeacherId;
-  };
+    return student.assignedTeacherId
+  }
 
   useEffect(() => {
     if (students) {
-      const filtered = students.filter(student => {
-        const teacherName = getTeacherName(student.assignedTeacherId);
-        return student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          teacherName.toLowerCase().includes(searchTerm.toLowerCase());
-      });
-      setFilteredStudents(filtered);
+      const filtered = students.filter((student: any) => {
+        const teacherName = getTeacherName(student.assignedTeacherId)
+        return (
+          student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          teacherName.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      })
+      setFilteredStudents(filtered)
     }
-  }, [students, searchTerm, teachers]);
+  }, [students, searchTerm, teachers])
 
   const handleDeleteStudent = async (studentId: string) => {
     if (window.confirm('정말로 이 학생을 삭제하시겠습니까?')) {
-      await deleteStudent(studentId);
+      await deleteStudent(studentId)
     }
-  };
+  }
 
   const handleEditStudent = (student: Student) => {
-    setEditStudent(student);
-    setEditDialogOpen(true);
-  };
+    setEditStudent(student)
+    setEditDialogOpen(true)
+  }
 
   const handleUpdateStudent = async (formData: StudentFormData) => {
-    if (!editStudent) return;
+    if (!editStudent) return
 
     try {
-      await useStudentStore.getState().updateStudent(editStudent.id, formData);
-      setEditDialogOpen(false);
-      setEditStudent(null);
-      alert('학생 정보가 수정되었습니다.');
-      fetchStudents(); // 목록 새로고침
+      await useStudentStore.getState().updateStudent(editStudent.id, formData)
+      setEditDialogOpen(false)
+      setEditStudent(null)
+      alert('학생 정보가 수정되었습니다.')
+      revalidator.revalidate() // 목록 새로고침
     } catch (error) {
-      console.error('학생 수정 실패:', error);
-      alert('학생 수정에 실패했습니다.');
-      throw error;
+      console.error('학생 수정 실패:', error)
+      alert('학생 수정에 실패했습니다.')
+      throw error
     }
-  };
+  }
 
   // 학생 선택 토글
   const handleStudentSelect = (studentId: string) => {
-    const newSelected = new Set(selectedStudents);
+    const newSelected = new Set(selectedStudents)
     if (newSelected.has(studentId)) {
-      newSelected.delete(studentId);
+      newSelected.delete(studentId)
     } else {
-      newSelected.add(studentId);
+      newSelected.add(studentId)
     }
-    setSelectedStudents(newSelected);
-  };
+    setSelectedStudents(newSelected)
+  }
 
   // 전체 선택/해제
   const handleSelectAll = () => {
     if (selectedStudents.size === filteredStudents.length) {
-      setSelectedStudents(new Set());
+      setSelectedStudents(new Set())
     } else {
-      setSelectedStudents(new Set(filteredStudents.map(s => s.id)));
+      setSelectedStudents(new Set(filteredStudents.map((s: any) => s.id)))
     }
-  };
+  }
 
   // 임시 담당 설정
   const handleTempAssignment = async () => {
     if (!tempTeacherId || !tempEndDate) {
-      alert('임시 담당 선생님과 종료일을 모두 선택해주세요.');
-      return;
+      alert('임시 담당 선생님과 종료일을 모두 선택해주세요.')
+      return
     }
 
     try {
-      const endDate = new Date(tempEndDate);
-      endDate.setHours(23, 59, 59, 999); // 종료일의 마지막 순간으로 설정
+      const endDate = new Date(tempEndDate)
+      endDate.setHours(23, 59, 59, 999) // 종료일의 마지막 순간으로 설정
 
       for (const studentId of selectedStudents) {
         await useStudentStore.getState().updateStudent(studentId, {
           tempAssignedTeacherId: tempTeacherId,
           tempAssignedUntil: endDate,
-        });
+        })
       }
 
-      setSelectedStudents(new Set());
-      setTempAssignmentDialogOpen(false);
-      setTempTeacherId('');
-      setTempEndDate('');
-      alert('임시 담당 선생님이 설정되었습니다.');
+      setSelectedStudents(new Set())
+      setTempAssignmentDialogOpen(false)
+      setTempTeacherId('')
+      setTempEndDate('')
+      alert('임시 담당 선생님이 설정되었습니다.')
     } catch (error) {
-      console.error('임시 담당 설정 실패:', error);
-      alert('임시 담당 설정에 실패했습니다.');
+      console.error('임시 담당 설정 실패:', error)
+      alert('임시 담당 설정에 실패했습니다.')
     }
-  };
+  }
 
   // 임시 담당 취소
   const handleCancelTempAssignment = async () => {
@@ -198,82 +195,82 @@ export default function StudentsPage() {
         await useStudentStore.getState().updateStudent(studentId, {
           tempAssignedTeacherId: undefined,
           tempAssignedUntil: undefined,
-        });
+        })
       }
 
-      setSelectedStudents(new Set());
-      alert('임시 담당이 취소되었습니다.');
+      setSelectedStudents(new Set())
+      alert('임시 담당이 취소되었습니다.')
     } catch (error) {
-      console.error('임시 담당 취소 실패:', error);
-      alert('임시 담당 취소에 실패했습니다.');
+      console.error('임시 담당 취소 실패:', error)
+      alert('임시 담당 취소에 실패했습니다.')
     }
-  };
+  }
 
   // 보내는 선생님이 변경될 때 해당 선생님의 학생들 가져오기
   const getStudentsByTeacher = (teacherId: string) => {
-    return filteredStudents.filter(student => {
-      const currentTeacher = getCurrentTeacherId(student);
-      return currentTeacher === teacherId;
-    });
-  };
+    return filteredStudents.filter((student: any) => {
+      const currentTeacher = getCurrentTeacherId(student)
+      return currentTeacher === teacherId
+    })
+  }
 
   // 학생 이동 처리
   const handleStudentTransfer = async () => {
     if (!fromTeacherId || !toTeacherId || !transferEndDate) {
-      alert('보내는 선생님, 받는 선생님, 종료일을 모두 선택해주세요.');
-      return;
+      alert('보내는 선생님, 받는 선생님, 종료일을 모두 선택해주세요.')
+      return
     }
 
     if (fromTeacherId === toTeacherId) {
-      alert('보내는 선생님과 받는 선생님이 같습니다.');
-      return;
+      alert('보내는 선생님과 받는 선생님이 같습니다.')
+      return
     }
 
     if (transferStudents.size === 0) {
-      alert('이동할 학생을 선택해주세요.');
-      return;
+      alert('이동할 학생을 선택해주세요.')
+      return
     }
 
     try {
-      const endDate = new Date(transferEndDate);
-      endDate.setHours(23, 59, 59, 999);
+      const endDate = new Date(transferEndDate)
+      endDate.setHours(23, 59, 59, 999)
 
       for (const studentId of transferStudents) {
         await useStudentStore.getState().updateStudent(studentId, {
           tempAssignedTeacherId: toTeacherId,
           tempAssignedUntil: endDate,
-        });
+        })
       }
 
       // 상태 초기화
-      setStudentTransferDialogOpen(false);
-      setFromTeacherId('');
-      setToTeacherId('');
-      setTransferStudents(new Set());
-      setTransferEndDate('');
+      setStudentTransferDialogOpen(false)
+      setFromTeacherId('')
+      setToTeacherId('')
+      setTransferStudents(new Set())
+      setTransferEndDate('')
 
-      alert(`${transferStudents.size}명의 학생이 임시로 이동되었습니다.`);
+      alert(`${transferStudents.size}명의 학생이 임시로 이동되었습니다.`)
     } catch (error) {
-      console.error('학생 이동 실패:', error);
-      alert('학생 이동에 실패했습니다.');
+      console.error('학생 이동 실패:', error)
+      alert('학생 이동에 실패했습니다.')
     }
-  };
+  }
 
   // 보내는 선생님 선택 시 초기화
   const handleFromTeacherChange = (teacherId: string) => {
-    setFromTeacherId(teacherId);
-    setTransferStudents(new Set()); // 학생 선택 초기화
-    setToTeacherId(''); // 받는 선생님 초기화
-  };
+    setFromTeacherId(teacherId)
+    setTransferStudents(new Set()) // 학생 선택 초기화
+    setToTeacherId('') // 받는 선생님 초기화
+  }
 
   const getClubText = (club: string) => {
     const clubMap: Record<string, string> = {
       [Club.SPARKS]: 'Sparks',
       [Club.TNT]: 'T&T',
       [Club.TREK]: 'Trek',
-    };
-    return clubMap[club] || club;
-  };
+    }
+    return clubMap[club] || club
+  }
 
   return (
     <div className="space-y-6">
@@ -336,7 +333,11 @@ export default function StudentsPage() {
         <div className="relative w-full sm:flex-1">
           <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
-            placeholder={canManageAllStudents ? "학생 이름 또는 담당 선생님으로 검색" : "학생 이름으로 검색"}
+            placeholder={
+              canManageAllStudents
+                ? '학생 이름 또는 담당 선생님으로 검색'
+                : '학생 이름으로 검색'
+            }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-full"
@@ -346,7 +347,10 @@ export default function StudentsPage() {
           <div className="flex items-center gap-2">
             <Checkbox
               id="select-all"
-              checked={selectedStudents.size === filteredStudents.length && filteredStudents.length > 0}
+              checked={
+                selectedStudents.size === filteredStudents.length &&
+                filteredStudents.length > 0
+              }
               onCheckedChange={handleSelectAll}
             />
             <label htmlFor="select-all" className="text-sm font-medium">
@@ -358,9 +362,7 @@ export default function StudentsPage() {
 
       {error && (
         <Alert variant="destructive" className="mb-4">
-          <AlertDescription>
-            {error}
-          </AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
@@ -378,7 +380,7 @@ export default function StudentsPage() {
       ) : (
         // 카드 형태
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredStudents.map((student) => (
+          {filteredStudents.map((student: any) => (
             <StudentCard
               key={student.id}
               student={student}
@@ -388,7 +390,7 @@ export default function StudentsPage() {
               onSelect={handleStudentSelect}
               onDelete={handleDeleteStudent}
               onEdit={handleEditStudent}
-              onUpdate={fetchStudents}
+              onUpdate={() => revalidator.revalidate()}
             />
           ))}
         </div>
@@ -412,12 +414,16 @@ export default function StudentsPage() {
       )}
 
       {/* 임시 담당 설정 다이얼로그 */}
-      <Dialog open={tempAssignmentDialogOpen} onOpenChange={setTempAssignmentDialogOpen}>
+      <Dialog
+        open={tempAssignmentDialogOpen}
+        onOpenChange={setTempAssignmentDialogOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>임시 담당 선생님 설정</DialogTitle>
             <DialogDescription>
-              선택된 {selectedStudents.size}명의 학생을 임시로 다른 선생님에게 배정합니다.
+              선택된 {selectedStudents.size}명의 학생을 임시로 다른 선생님에게
+              배정합니다.
             </DialogDescription>
           </DialogHeader>
 
@@ -461,22 +467,23 @@ export default function StudentsPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setTempAssignmentDialogOpen(false);
-                setTempTeacherId('');
-                setTempEndDate('');
+                setTempAssignmentDialogOpen(false)
+                setTempTeacherId('')
+                setTempEndDate('')
               }}
             >
               취소
             </Button>
-            <Button onClick={handleTempAssignment}>
-              설정하기
-            </Button>
+            <Button onClick={handleTempAssignment}>설정하기</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* 학생 이동 다이얼로그 */}
-      <Dialog open={studentTransferDialogOpen} onOpenChange={setStudentTransferDialogOpen}>
+      <Dialog
+        open={studentTransferDialogOpen}
+        onOpenChange={setStudentTransferDialogOpen}
+      >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>📚 학생 임시 이동</DialogTitle>
@@ -492,7 +499,10 @@ export default function StudentsPage() {
                 <label className="text-sm font-medium mb-2 block">
                   📤 보내는 선생님
                 </label>
-                <Select value={fromTeacherId} onValueChange={handleFromTeacherChange}>
+                <Select
+                  value={fromTeacherId}
+                  onValueChange={handleFromTeacherChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="선생님 선택" />
                   </SelectTrigger>
@@ -516,7 +526,7 @@ export default function StudentsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {teachers
-                      .filter(teacher => teacher.uid !== fromTeacherId)
+                      .filter((teacher) => teacher.uid !== fromTeacherId)
                       .map((teacher) => (
                         <SelectItem key={teacher.uid} value={teacher.uid}>
                           {teacher.displayName}
@@ -561,35 +571,51 @@ export default function StudentsPage() {
                       <div className="flex items-center gap-2 mb-3">
                         <Checkbox
                           id="select-all-transfer"
-                          checked={transferStudents.size === getStudentsByTeacher(fromTeacherId).length && getStudentsByTeacher(fromTeacherId).length > 0}
+                          checked={
+                            transferStudents.size ===
+                              getStudentsByTeacher(fromTeacherId).length &&
+                            getStudentsByTeacher(fromTeacherId).length > 0
+                          }
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setTransferStudents(new Set(getStudentsByTeacher(fromTeacherId).map(s => s.id)));
+                              setTransferStudents(
+                                new Set(
+                                  getStudentsByTeacher(fromTeacherId).map(
+                                    (s: any) => s.id,
+                                  ),
+                                ),
+                              )
                             } else {
-                              setTransferStudents(new Set());
+                              setTransferStudents(new Set())
                             }
                           }}
                         />
-                        <label htmlFor="select-all-transfer" className="text-sm font-medium">
+                        <label
+                          htmlFor="select-all-transfer"
+                          className="text-sm font-medium"
+                        >
                           전체 선택
                         </label>
                       </div>
-                      {getStudentsByTeacher(fromTeacherId).map((student) => (
+                      {getStudentsByTeacher(fromTeacherId).map((student: any) => (
                         <div
                           key={student.id}
-                          className={`flex items-center gap-3 p-2 rounded border ${transferStudents.has(student.id) ? 'bg-primary/10 border-primary' : 'bg-card border-border'
-                            }`}
+                          className={`flex items-center gap-3 p-2 rounded border ${
+                            transferStudents.has(student.id)
+                              ? 'bg-primary/10 border-primary'
+                              : 'bg-card border-border'
+                          }`}
                         >
                           <Checkbox
                             checked={transferStudents.has(student.id)}
                             onCheckedChange={(checked) => {
-                              const newSelected = new Set(transferStudents);
+                              const newSelected = new Set(transferStudents)
                               if (checked) {
-                                newSelected.add(student.id);
+                                newSelected.add(student.id)
                               } else {
-                                newSelected.delete(student.id);
+                                newSelected.delete(student.id)
                               }
-                              setTransferStudents(newSelected);
+                              setTransferStudents(newSelected)
                             }}
                           />
                           <div className="flex items-center gap-2">
@@ -611,18 +637,23 @@ export default function StudentsPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setStudentTransferDialogOpen(false);
-                setFromTeacherId('');
-                setToTeacherId('');
-                setTransferStudents(new Set());
-                setTransferEndDate('');
+                setStudentTransferDialogOpen(false)
+                setFromTeacherId('')
+                setToTeacherId('')
+                setTransferStudents(new Set())
+                setTransferEndDate('')
               }}
             >
               취소
             </Button>
             <Button
               onClick={handleStudentTransfer}
-              disabled={!fromTeacherId || !toTeacherId || !transferEndDate || transferStudents.size === 0}
+              disabled={
+                !fromTeacherId ||
+                !toTeacherId ||
+                !transferEndDate ||
+                transferStudents.size === 0
+              }
             >
               학생 이동하기
             </Button>
@@ -635,7 +666,7 @@ export default function StudentsPage() {
         open={studentDialogOpen}
         onOpenChange={setStudentDialogOpen}
         onSubmit={async (formData) => {
-          await createStudent(formData);
+          await createStudent(formData)
         }}
         isLoading={isLoading}
       />
@@ -649,5 +680,5 @@ export default function StudentsPage() {
         student={editStudent || undefined}
       />
     </div>
-  );
+  )
 }

@@ -7,27 +7,27 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
+} from 'recharts'
 
 export interface BarChartData {
-  name: string;
-  [key: string]: number | string;
+  name: string
+  [key: string]: number | string
 }
 
 interface BarChartProps {
-  data: BarChartData[];
+  data: BarChartData[]
   bars: {
-    dataKey: string;
-    fill: string;
-    name?: string;
-  }[];
-  height?: number;
-  showGrid?: boolean;
-  showLegend?: boolean;
-  showTooltip?: boolean;
-  layout?: 'horizontal' | 'vertical';
-  xAxisKey?: string;
-  className?: string;
+    dataKey: string
+    fill: string
+    name?: string
+  }[]
+  height?: number
+  showGrid?: boolean
+  showLegend?: boolean
+  showTooltip?: boolean
+  layout?: 'horizontal' | 'vertical'
+  xAxisKey?: string
+  className?: string
 }
 
 export function BarChart({
@@ -90,5 +90,5 @@ export function BarChart({
         </RechartsBarChart>
       </ResponsiveContainer>
     </div>
-  );
+  )
 }

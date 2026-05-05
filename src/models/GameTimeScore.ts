@@ -45,7 +45,7 @@ export interface GameTimeSessionFormData {
 // 점수 계산 헬퍼 함수
 export function calculateTotalScores(
   gameScores: ScoreEvent[] = [],
-  cheerScores: ScoreEvent[] = []
+  cheerScores: ScoreEvent[] = [],
 ): {
   red: number
   yellow: number
@@ -58,7 +58,7 @@ export function calculateTotalScores(
       ...totals,
       [event.team]: totals[event.team] + event.score,
     }),
-    { red: 0, yellow: 0, blue: 0, green: 0 }
+    { red: 0, yellow: 0, blue: 0, green: 0 },
   )
 
   // 응원점수 합산
@@ -67,7 +67,7 @@ export function calculateTotalScores(
       ...totals,
       [cheer.team]: totals[cheer.team] + cheer.score,
     }),
-    { red: 0, yellow: 0, blue: 0, green: 0 }
+    { red: 0, yellow: 0, blue: 0, green: 0 },
   )
 
   // 최종 합계

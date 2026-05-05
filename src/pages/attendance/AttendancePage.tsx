@@ -1,40 +1,44 @@
-import { useEffect, useState } from 'react';
-import { User as UserIcon, CheckCircle2, Circle, Calendar, Plus } from 'lucide-react';
-import { useMobile } from '../../hooks/useMobile';
-import { useAttendanceStore } from '../../store/attendanceStore';
-import { useStudentStore } from '../../store/studentStore';
-import { useAuthStore } from '../../store/authStore';
-import { userService } from '../../services/userService';
-import { studentService } from '../../services/studentService';
-import { AttendanceStatus } from '../../models/Attendance';
-import { canManageChurchData, getScopedTeacherId } from '../../utils/permissions';
-import { Club } from '../../constants/clubs';
-import type { User } from '../../models/User';
-import type { Student } from '../../models/Student';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui';
-import { Card, CardContent } from '../../components/ui';
-import { Badge } from '../../components/ui';
-import { Alert, AlertDescription } from '../../components/ui';
-import { Avatar, AvatarFallback } from '../../components/ui';
-import { DataTable } from '../../components/data-visualization/DataTable';
-import { StudentFormDialog } from '../../components/forms';
-import type { ColumnDef } from '@tanstack/react-table';
+import { useEffect, useState } from 'react'
+import { useLoaderData, useRevalidator } from 'react-router-dom'
+import {
+  User as UserIcon,
+  CheckCircle2,
+  Circle,
+  Calendar,
+  Plus,
+} from 'lucide-react'
+import { useMobile } from '../../hooks/useMobile'
+import { useAttendanceStore } from '../../store/attendanceStore'
+import { useStudentStore } from '../../store/studentStore'
+import { useAuthStore } from '../../store/authStore'
+import { AttendanceStatus } from '../../models/Attendance'
+import { Club } from '../../constants/clubs'
+import type { User } from '../../models/User'
+import type { Student } from '../../models/Student'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui'
+import { Card, CardContent } from '../../components/ui'
+import { Badge } from '../../components/ui'
+import { Alert, AlertDescription } from '../../components/ui'
+import { Avatar, AvatarFallback } from '../../components/ui'
+import { DataTable } from '../../components/data-visualization/DataTable'
+import { StudentFormDialog } from '../../components/forms'
+import type { ColumnDef } from '@tanstack/react-table'
 
 type StudentWithAttendance = {
-  id: string;
-  name: string;
-  club: Club;
-  assignedTeacherId?: string;
-  tempAssignedTeacherId?: string;
-  tempAssignedUntil?: Date;
-  attendance?: AttendanceStatus;
-  teacherName: string;
-};
+  id: string
+  name: string
+  club: Club
+  assignedTeacherId?: string
+  tempAssignedTeacherId?: string
+  tempAssignedUntil?: Date
+  attendance?: AttendanceStatus
+  teacherName: string
+}
 
 export default function AttendancePage() {
-  const isMobile = useMobile();
-  const { user } = useAuthStore();
+  const isMobile = useMobile()
+  const { user } = useAuthStore()
   const {
     attendances,
     isLoading,
@@ -42,83 +46,59 @@ export default function AttendancePage() {
     fetchAttendances,
     createAttendance,
     updateAttendance,
-    clearError
-  } = useAttendanceStore();
-  const { createStudent } = useStudentStore();
+    clearError,
+  } = useAttendanceStore()
+  const { createStudent } = useStudentStore()
 
-  const [students, setStudents] = useState<Student[]>([]);
-  const [isStudentLoading, setIsStudentLoading] = useState(false);
+  const loaderData = useLoaderData() as { students: Student[], teachers: User[] } | null
+  const revalidator = useRevalidator()
+
+  const students = loaderData?.students || []
+  const teachers = loaderData?.teachers || []
+
 
   // 한국 시간 기준 오늘 날짜 계산
   const getKoreanDateString = () => {
-    const now = new Date();
+    const now = new Date()
     // 한국 시간으로 변환 (UTC+9)
-    const koreanTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-    return koreanTime.toISOString().split('T')[0];
-  };
+    const koreanTime = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+    return koreanTime.toISOString().split('T')[0]
+  }
 
-  const [selectedDate, setSelectedDate] = useState(getKoreanDateString());
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const [studentDialogOpen, setStudentDialogOpen] = useState(false);
-  const studentIdSet = new Set((students || []).map(student => student.id));
+  const [selectedDate, setSelectedDate] = useState(getKoreanDateString())
+  const [studentDialogOpen, setStudentDialogOpen] = useState(false)
+  const studentIdSet = new Set((students || []).map((student) => student.id))
 
-  // 선생님 목록 가져오기
+  // 날짜 변경 시 출석 데이터 다시 가져오기
   useEffect(() => {
-    const fetchTeachers = async () => {
-      if (user?.churchId) {
-        try {
-          const teacherList = await userService.getTeachersByChurch(user.churchId);
-          setTeachers(teacherList);
-        } catch (error) {
-          console.error('선생님 목록 가져오기 실패:', error);
-        }
-      }
-    };
-    fetchTeachers();
-  }, [user?.churchId]);
-
-  // 학생 목록 가져오기 (출석관리 권한에 따라 전체/담당 학생만 조회)
-  const fetchStudentsForAttendance = async () => {
-    if (!user?.churchId) return;
-
-    setIsStudentLoading(true);
-    try {
-      // 교회 전체 관리 권한이 있으면 전체 학생 조회, 아니면 담당 학생만 조회
-      const teacherId = canManageChurchData(user) ? undefined : getScopedTeacherId(user);
-      const studentList = await studentService.getStudentsByChurch(user.churchId, teacherId);
-      setStudents(studentList);
-    } catch (error) {
-      console.error('학생 목록 가져오기 실패:', error);
-    } finally {
-      setIsStudentLoading(false);
+    if (user?.churchId && selectedDate !== getKoreanDateString()) {
+      fetchAttendances(user.churchId, selectedDate)
     }
-  };
+  }, [user?.churchId, selectedDate, fetchAttendances])
 
-  useEffect(() => {
-    if (user?.churchId) {
-      fetchStudentsForAttendance();
-      fetchAttendances(user.churchId, selectedDate);
-    }
-  }, [user?.churchId, selectedDate, fetchAttendances]);
-
-  const handleAttendanceChange = async (student: Student, status: AttendanceStatus) => {
-    if (!user?.churchId) return;
+  const handleAttendanceChange = async (
+    student: Student,
+    status: AttendanceStatus,
+  ) => {
+    if (!user?.churchId) return
 
     try {
-      const existingAttendances = attendances?.filter(a =>
-        a.date.toISOString().split('T')[0] === selectedDate &&
-        a.studentId === student.id
-      ) || [];
+      const existingAttendances =
+        attendances?.filter(
+          (a) =>
+            a.date.toISOString().split('T')[0] === selectedDate &&
+            a.studentId === student.id,
+        ) || []
 
-      const existingAttendance = existingAttendances[0];
+      const existingAttendance = existingAttendances[0]
       if (existingAttendance) {
         await updateAttendance(existingAttendance.id, {
           ...existingAttendance,
           status,
-        });
+        })
       } else {
-        const teacherId = getCurrentTeacherId(student);
-        const teacherName = getTeacherName(teacherId);
+        const teacherId = getCurrentTeacherId(student)
+        const teacherName = getTeacherName(teacherId)
         await createAttendance({
           studentId: student.id,
           date: new Date(selectedDate),
@@ -126,21 +106,21 @@ export default function AttendancePage() {
           studentName: student.name,
           teacherId: teacherId || '',
           teacherName: teacherName,
-        });
+        })
       }
 
-      await fetchAttendances(user.churchId, selectedDate);
+      await fetchAttendances(user.churchId, selectedDate)
     } catch (error) {
-      console.error('출결 변경 실패:', error);
+      console.error('출결 변경 실패:', error)
     }
-  };
+  }
 
   // 선생님 ID로 선생님 이름을 찾는 함수
   const getTeacherName = (teacherId?: string) => {
-    if (!teacherId) return '미배정';
-    const teacher = teachers.find(t => t.uid === teacherId);
-    return teacher?.displayName || '알 수 없음';
-  };
+    if (!teacherId) return '미배정'
+    const teacher = teachers.find((t) => t.uid === teacherId)
+    return teacher?.displayName || '알 수 없음'
+  }
 
   // 클럽을 텍스트로 변환하는 함수
   const getClubText = (club: Club): string => {
@@ -148,47 +128,60 @@ export default function AttendancePage() {
       [Club.SPARKS]: 'Sparks',
       [Club.TNT]: 'T&T',
       [Club.TREK]: 'Trek',
-    };
-    return clubMap[club] || club;
-  };
+    }
+    return clubMap[club] || club
+  }
 
   // 학생의 현재 담당 선생님 ID를 가져오는 함수
-  const getCurrentTeacherId = (student: { tempAssignedTeacherId?: string; tempAssignedUntil?: Date | string; assignedTeacherId?: string }) => {
+  const getCurrentTeacherId = (student: {
+    tempAssignedTeacherId?: string
+    tempAssignedUntil?: Date | string
+    assignedTeacherId?: string
+  }) => {
     // 임시 담당 선생님이 있고, 임시 담당 종료일이 아직 지나지 않은 경우
     if (student.tempAssignedTeacherId && student.tempAssignedUntil) {
-      const now = new Date();
-      const tempUntil = student.tempAssignedUntil instanceof Date ? student.tempAssignedUntil : new Date(student.tempAssignedUntil);
+      const now = new Date()
+      const tempUntil =
+        student.tempAssignedUntil instanceof Date
+          ? student.tempAssignedUntil
+          : new Date(student.tempAssignedUntil)
       if (tempUntil >= now) {
-        return student.tempAssignedTeacherId;
+        return student.tempAssignedTeacherId
       }
     }
     // 기본 담당 선생님
-    return student.assignedTeacherId;
-  };
+    return student.assignedTeacherId
+  }
 
   const getAttendanceStats = () => {
-    if (!attendances) return { present: 0, absent: 0, total: 0 };
+    if (!attendances) return { present: 0, absent: 0, total: 0 }
 
-    const dayAttendances = attendances.filter(a =>
-      a.date.toISOString().split('T')[0] === selectedDate &&
-      studentIdSet.has(a.studentId)
-    );
+    const dayAttendances = attendances.filter(
+      (a) =>
+        a.date.toISOString().split('T')[0] === selectedDate &&
+        studentIdSet.has(a.studentId),
+    )
 
-    const present = dayAttendances.filter(a => a.status === AttendanceStatus.PRESENT).length;
-    const absent = dayAttendances.filter(a => a.status === AttendanceStatus.ABSENT).length;
-    const total = students?.length || 0;
+    const present = dayAttendances.filter(
+      (a) => a.status === AttendanceStatus.PRESENT,
+    ).length
+    const absent = dayAttendances.filter(
+      (a) => a.status === AttendanceStatus.ABSENT,
+    ).length
+    const total = students?.length || 0
 
-    return { present, absent, total };
-  };
+    return { present, absent, total }
+  }
 
-  const stats = getAttendanceStats();
+  const stats = getAttendanceStats()
 
   // 테이블 데이터 준비
-  const tableData: StudentWithAttendance[] = (students || []).map(student => {
-    const attendance = attendances?.find(a =>
-      a.studentId === student.id &&
-      a.date.toISOString().split('T')[0] === selectedDate
-    );
+  const tableData: StudentWithAttendance[] = (students || []).map((student) => {
+    const attendance = attendances?.find(
+      (a) =>
+        a.studentId === student.id &&
+        a.date.toISOString().split('T')[0] === selectedDate,
+    )
     return {
       id: student.id,
       name: student.name,
@@ -198,24 +191,20 @@ export default function AttendancePage() {
       tempAssignedUntil: student.tempAssignedUntil,
       attendance: attendance?.status,
       teacherName: getTeacherName(getCurrentTeacherId(student)),
-    };
-  });
+    }
+  })
 
   const columns: ColumnDef<StudentWithAttendance>[] = [
     {
       accessorKey: 'name',
       header: '학생 이름',
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.name}</div>
-      ),
+      cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
     },
     {
       accessorKey: 'club',
       header: '클럽',
       cell: ({ row }) => (
-        <Badge variant="outline">
-          {getClubText(row.original.club)}
-        </Badge>
+        <Badge variant="outline">{getClubText(row.original.club)}</Badge>
       ),
     },
     {
@@ -226,9 +215,9 @@ export default function AttendancePage() {
       accessorKey: 'attendance',
       header: '출결 상태',
       cell: ({ row }) => {
-        const attendance = row.original.attendance;
+        const attendance = row.original.attendance
         if (!attendance) {
-          return <Badge variant="outline">미등록</Badge>;
+          return <Badge variant="outline">미등록</Badge>
         }
         return (
           <div className="flex items-center gap-2">
@@ -237,45 +226,59 @@ export default function AttendancePage() {
             ) : (
               <Circle className="h-5 w-5 text-red-500" />
             )}
-            <span className={`text-sm ${
-              attendance === AttendanceStatus.PRESENT
-                ? 'text-green-500'
-                : 'text-red-500'
-            }`}>
+            <span
+              className={`text-sm ${
+                attendance === AttendanceStatus.PRESENT
+                  ? 'text-green-500'
+                  : 'text-red-500'
+              }`}
+            >
               {attendance === AttendanceStatus.PRESENT ? '출석' : '결석'}
             </span>
           </div>
-        );
+        )
       },
     },
     {
       id: 'actions',
       header: '바로 체크',
       cell: ({ row }) => {
-        const student = students.find(item => item.id === row.original.id);
-        if (!student) return null;
+        const student = students.find((item) => item.id === row.original.id)
+        if (!student) return null
 
         return (
           <div className="flex items-center gap-2">
             <Button
               className="h-11 px-5 text-base"
-              variant={row.original.attendance === AttendanceStatus.PRESENT ? 'default' : 'outline'}
-              onClick={() => handleAttendanceChange(student, AttendanceStatus.PRESENT)}
+              variant={
+                row.original.attendance === AttendanceStatus.PRESENT
+                  ? 'default'
+                  : 'outline'
+              }
+              onClick={() =>
+                handleAttendanceChange(student, AttendanceStatus.PRESENT)
+              }
             >
               출석
             </Button>
             <Button
               className="h-11 px-5 text-base"
-              variant={row.original.attendance === AttendanceStatus.ABSENT ? 'default' : 'outline'}
-              onClick={() => handleAttendanceChange(student, AttendanceStatus.ABSENT)}
+              variant={
+                row.original.attendance === AttendanceStatus.ABSENT
+                  ? 'default'
+                  : 'outline'
+              }
+              onClick={() =>
+                handleAttendanceChange(student, AttendanceStatus.ABSENT)
+              }
             >
               결석
             </Button>
           </div>
-        );
+        )
       },
     },
-  ];
+  ]
 
   return (
     <div className="space-y-6">
@@ -305,25 +308,31 @@ export default function AttendancePage() {
         <div className="flex gap-2 items-center justify-between overflow-x-auto">
           <div className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
             <Calendar className="h-4 w-4" />
-            <span className={`font-medium ${selectedDate === getKoreanDateString() ? 'text-primary font-semibold' : ''}`}>
+            <span
+              className={`font-medium ${selectedDate === getKoreanDateString() ? 'text-primary font-semibold' : ''}`}
+            >
               {new Date(selectedDate).toLocaleDateString('ko-KR', {
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                day: 'numeric',
               })}
             </span>
           </div>
 
           <div className="flex gap-2 whitespace-nowrap">
-            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500">
+            <Badge
+              variant="outline"
+              className="bg-green-500/10 text-green-500 border-green-500"
+            >
               출석: {stats.present}
             </Badge>
-            <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500">
+            <Badge
+              variant="outline"
+              className="bg-red-500/10 text-red-500 border-red-500"
+            >
               결석: {stats.absent}
             </Badge>
-            <Badge variant="outline">
-              총원: {stats.total}
-            </Badge>
+            <Badge variant="outline">총원: {stats.total}</Badge>
           </div>
         </div>
       </div>
@@ -332,10 +341,7 @@ export default function AttendancePage() {
         <Alert variant="destructive">
           <AlertDescription className="flex items-center justify-between">
             <span>{error}</span>
-            <button
-              onClick={clearError}
-              className="ml-4 text-sm underline"
-            >
+            <button onClick={clearError} className="ml-4 text-sm underline">
               닫기
             </button>
           </AlertDescription>
@@ -355,13 +361,17 @@ export default function AttendancePage() {
         // 모바일: 카드 형태
         <div className="flex flex-col gap-4">
           {students?.map((student) => {
-            const attendance = attendances?.find(a =>
-              a.studentId === student.id &&
-              a.date.toISOString().split('T')[0] === selectedDate
-            );
+            const attendance = attendances?.find(
+              (a) =>
+                a.studentId === student.id &&
+                a.date.toISOString().split('T')[0] === selectedDate,
+            )
 
             return (
-              <Card key={student.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={student.id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
@@ -391,12 +401,16 @@ export default function AttendancePage() {
                             ) : (
                               <Circle className="h-5 w-5 text-red-500" />
                             )}
-                            <span className={`text-sm ${
-                              attendance.status === AttendanceStatus.PRESENT
-                                ? 'text-green-500'
-                                : 'text-red-500'
-                            }`}>
-                              {attendance.status === AttendanceStatus.PRESENT ? '출석' : '결석'}
+                            <span
+                              className={`text-sm ${
+                                attendance.status === AttendanceStatus.PRESENT
+                                  ? 'text-green-500'
+                                  : 'text-red-500'
+                              }`}
+                            >
+                              {attendance.status === AttendanceStatus.PRESENT
+                                ? '출석'
+                                : '결석'}
                             </span>
                           </div>
                         ) : (
@@ -405,15 +419,33 @@ export default function AttendancePage() {
                         <div className="flex items-center gap-2">
                           <Button
                             className="h-11 px-5 text-base"
-                            variant={attendance?.status === AttendanceStatus.PRESENT ? 'default' : 'outline'}
-                            onClick={() => handleAttendanceChange(student, AttendanceStatus.PRESENT)}
+                            variant={
+                              attendance?.status === AttendanceStatus.PRESENT
+                                ? 'default'
+                                : 'outline'
+                            }
+                            onClick={() =>
+                              handleAttendanceChange(
+                                student,
+                                AttendanceStatus.PRESENT,
+                              )
+                            }
                           >
                             출석
                           </Button>
                           <Button
                             className="h-11 px-5 text-base"
-                            variant={attendance?.status === AttendanceStatus.ABSENT ? 'default' : 'outline'}
-                            onClick={() => handleAttendanceChange(student, AttendanceStatus.ABSENT)}
+                            variant={
+                              attendance?.status === AttendanceStatus.ABSENT
+                                ? 'default'
+                                : 'outline'
+                            }
+                            onClick={() =>
+                              handleAttendanceChange(
+                                student,
+                                AttendanceStatus.ABSENT,
+                              )
+                            }
                           >
                             결석
                           </Button>
@@ -423,16 +455,12 @@ export default function AttendancePage() {
                   </div>
                 </CardContent>
               </Card>
-            );
+            )
           })}
         </div>
       ) : (
         // 데스크톱: 테이블 형태
-        <DataTable
-          data={tableData}
-          columns={columns}
-          searchable={false}
-        />
+        <DataTable data={tableData} columns={columns} searchable={false} />
       )}
 
       {/* 모바일 출결 체크 FAB */}
@@ -454,11 +482,11 @@ export default function AttendancePage() {
         open={studentDialogOpen}
         onOpenChange={setStudentDialogOpen}
         onSubmit={async (formData) => {
-          await createStudent(formData);
-          await fetchStudentsForAttendance(); // 학생 목록 새로고침
+          await createStudent(formData)
+          revalidator.revalidate() // 학생 목록 새로고침
         }}
-        isLoading={isStudentLoading}
+        isLoading={isLoading}
       />
     </div>
-  );
+  )
 }
