@@ -35,7 +35,7 @@ import {
   gameTimeRevealLoader
 } from '../loaders'
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/'
+const basePath = import.meta.env.VITE_BASE_PATH || (import.meta.env.DEV ? '/' : '/awana/')
 
 export const router = createBrowserRouter(
   [
