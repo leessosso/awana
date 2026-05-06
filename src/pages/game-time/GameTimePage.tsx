@@ -319,6 +319,15 @@ export default function GameTimePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {(['green', 'yellow', 'blue', 'red'] as const).map((team) => {
                 const teamInfo = teamColors[team]
+                const teamButtonClassNames = {
+                  green:
+                    'border-green-300 bg-green-50 text-green-700 hover:bg-green-100',
+                  yellow:
+                    'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100',
+                  blue:
+                    'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100',
+                  red: 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100',
+                } as const
                 return (
                   <div
                     key={team}
@@ -339,7 +348,7 @@ export default function GameTimePage() {
                             key={score}
                             variant="outline"
                             onClick={() => handleAddGameScore(team, score)}
-                            className="h-11 text-sm font-semibold touch-manipulation"
+                            className={`h-11 text-sm font-semibold touch-manipulation ${teamButtonClassNames[team]}`}
                             disabled={isLoading}
                           >
                             +{score}

@@ -111,4 +111,4 @@ export const teamColors = {
 export const scoreOptions: GameScore[] = [400, 300, 200, 100, 0]
 
 // 게임 점수 추가/차감 옵션
-export const gameScoreOptions = [400, 300, 200, 100, 50]
+export const gameScoreOptions = [400, 300, 200, 100, 50, 500]

@@ -281,13 +281,6 @@ export default function HandbookPage() {
   // 데스크톱 테이블 컬럼 정의
   const columns: ColumnDef<typeof tableData[0]>[] = [
     {
-      accessorKey: 'teacher',
-      header: '담당 선생님',
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">{row.original.teacher}</div>
-      ),
-    },
-    {
       accessorKey: 'name',
       header: '학생 이름',
       cell: ({ row }) => (
@@ -339,6 +332,13 @@ export default function HandbookPage() {
         </div>
       ),
     }] : []),
+    {
+      accessorKey: 'teacher',
+      header: '담당 선생님',
+      cell: ({ row }) => (
+        <div className="text-sm text-muted-foreground">{row.original.teacher}</div>
+      ),
+    },
   ];
 
   return (

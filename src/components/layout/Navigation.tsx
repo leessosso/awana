@@ -23,8 +23,8 @@ import {
 
 const navItems = [
   { to: '/dashboard', label: '대시보드' },
-  { to: '/attendance', label: '출석 관리' },
   { to: '/students', label: '학생 관리' },
+  { to: '/attendance', label: '출석 관리' },
   { to: '/handbook', label: '핸드북' },
   { to: '/game-time', label: '게임시간', end: true },
   { to: '/team-activity-score', label: '팀활동 점수' },
