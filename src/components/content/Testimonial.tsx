@@ -1,15 +1,15 @@
-import { Card } from '../ui/Card';
+import { Card } from '../ui/Card'
 
 interface TestimonialProps {
-  quote: string;
+  quote: string
   author: {
-    name: string;
-    role: string;
-    company?: string;
-    avatar?: string;
-  };
-  rating?: number;
-  className?: string;
+    name: string
+    role: string
+    company?: string
+    avatar?: string
+  }
+  rating?: number
+  className?: string
 }
 
 export function Testimonial({
@@ -46,9 +46,7 @@ export function Testimonial({
           />
         )}
         <div>
-          <div className="font-semibold text-foreground">
-            {author.name}
-          </div>
+          <div className="font-semibold text-foreground">{author.name}</div>
           <div className="text-sm text-muted-foreground">
             {author.role}
             {author.company && ` at ${author.company}`}
@@ -56,5 +54,5 @@ export function Testimonial({
         </div>
       </div>
     </Card>
-  );
+  )
 }

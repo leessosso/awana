@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Trash2, Calendar, Save, Edit, X } from 'lucide-react'
 import { useGameTimeStore } from '../../store/gameTimeStore'
 import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
@@ -16,7 +17,12 @@ import {
 import { Club } from '../../constants/clubs'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/Card'
 import { Badge } from '../../components/ui'
 import { Alert, AlertDescription } from '../../components/ui'
 import { useToast } from '../../hooks/use-toast'
@@ -24,6 +30,7 @@ import { useToast } from '../../hooks/use-toast'
 export default function GameTimePage() {
   const { user } = useAuthStore()
   const { toast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // 한국 시간 기준 오늘 날짜 계산
   const getKoreanDateString = () => {
@@ -32,43 +39,32 @@ export default function GameTimePage() {
     return koreanTime.toISOString().split('T')[0]
   }
 
-  const [selectedDate, setSelectedDate] = useState(getKoreanDateString())
-  const [selectedProgram, setSelectedProgram] = useState<GameTimeProgram>(Club.SPARKS)
+  const selectedDate = searchParams.get('date') || getKoreanDateString()
+  const selectedProgram = (searchParams.get('program') as GameTimeProgram) || Club.SPARKS
+
+  const handleDateChange = (date: string) => {
+    setIsEditing(false)
+    setSearchParams({ date, program: selectedProgram })
+  }
+
+  const handleProgramChange = (program: string) => {
+    setIsEditing(false)
+    setSearchParams({ date: selectedDate, program })
+  }
 
   // 통합 스토어 사용
   const {
     currentSession,
     isLoading,
     error,
-    fetchGameTimeSession,
     createGameTimeSession,
     updateGameTimeSession,
     deleteGameTimeSession,
   } = useGameTimeStore()
-  const {
-    currentSession: teamActivitySession,
-    fetchTeamActivitySession,
-  } = useTeamActivityScoreStore()
+  const { currentSession: teamActivitySession } = useTeamActivityScoreStore()
 
   const [gameScores, setGameScores] = useState<ScoreEvent[]>([])
   const [isEditing, setIsEditing] = useState(false)
-
-  // 날짜 또는 프로그램 변경 시 세션 로드
-  useEffect(() => {
-    if (user?.churchId && selectedDate) {
-      const date = new Date(selectedDate)
-      // 프로그램이 변경되면 편집 상태 초기화
-      setIsEditing(false)
-      fetchGameTimeSession(date, selectedProgram)
-      fetchTeamActivitySession(date, selectedProgram)
-    }
-  }, [
-    selectedDate,
-    selectedProgram,
-    user?.churchId,
-    fetchGameTimeSession,
-    fetchTeamActivitySession,
-  ])
 
   // 세션이 로드되면 데이터 업데이트 (편집 중이 아닐 때만)
   useEffect(() => {
@@ -94,7 +90,7 @@ export default function GameTimePage() {
   // 게임 점수 추가/차감
   const handleAddGameScore = (
     team: 'green' | 'yellow' | 'blue' | 'red',
-    score: number
+    score: number,
   ) => {
     const newScoreEvent: ScoreEvent = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -197,7 +193,9 @@ export default function GameTimePage() {
   const handleDelete = async () => {
     if (!currentSession) return
 
-    if (!confirm(`정말로 이 ${selectedProgram} 게임시간 기록을 삭제하시겠습니까?`)) {
+    if (
+      !confirm(`정말로 이 ${selectedProgram} 게임시간 기록을 삭제하시겠습니까?`)
+    ) {
       return
     }
 
@@ -244,7 +242,7 @@ export default function GameTimePage() {
                   <Input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => handleDateChange(e.target.value)}
                     className="w-full sm:w-auto"
                   />
                 </div>
@@ -256,7 +254,7 @@ export default function GameTimePage() {
                       value={Club.SPARKS}
                       checked={selectedProgram === Club.SPARKS}
                       onChange={(e) =>
-                        setSelectedProgram(e.target.value as GameTimeProgram)
+                        handleProgramChange(e.target.value)
                       }
                       className="w-4 h-4 cursor-pointer accent-primary"
                     />
@@ -270,7 +268,7 @@ export default function GameTimePage() {
                       value={Club.TNT}
                       checked={selectedProgram === Club.TNT}
                       onChange={(e) =>
-                        setSelectedProgram(e.target.value as GameTimeProgram)
+                        handleProgramChange(e.target.value)
                       }
                       className="w-4 h-4 cursor-pointer accent-primary"
                     />
@@ -321,6 +319,15 @@ export default function GameTimePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {(['green', 'yellow', 'blue', 'red'] as const).map((team) => {
                 const teamInfo = teamColors[team]
+                const teamButtonClassNames = {
+                  green:
+                    'border-green-300 bg-green-50 text-green-700 hover:bg-green-100',
+                  yellow:
+                    'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100',
+                  blue:
+                    'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100',
+                  red: 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100',
+                } as const
                 return (
                   <div
                     key={team}
@@ -331,7 +338,9 @@ export default function GameTimePage() {
                         <div
                           className={`w-3 h-3 rounded-full ${teamInfo.bgColor}`}
                         />
-                        <h3 className="font-semibold text-sm">{teamInfo.name}</h3>
+                        <h3 className="font-semibold text-sm">
+                          {teamInfo.name}
+                        </h3>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         {gameScoreOptions.map((score) => (
@@ -339,7 +348,7 @@ export default function GameTimePage() {
                             key={score}
                             variant="outline"
                             onClick={() => handleAddGameScore(team, score)}
-                            className="h-11 text-sm font-semibold touch-manipulation"
+                            className={`h-11 text-sm font-semibold touch-manipulation ${teamButtonClassNames[team]}`}
                             disabled={isLoading}
                           >
                             +{score}
@@ -383,7 +392,8 @@ export default function GameTimePage() {
                         className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
                       />
                       <span className="text-sm">
-                        {teamInfo.name} {event.score > 0 ? '+' : ''}{event.score}점
+                        {teamInfo.name} {event.score > 0 ? '+' : ''}
+                        {event.score}점
                       </span>
                     </div>
                     <Button

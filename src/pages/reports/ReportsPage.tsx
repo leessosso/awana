@@ -4,28 +4,29 @@ import {
   GraduationCap as SchoolIcon,
   BarChart3 as BarChartIcon,
   FileText as AssessmentIcon,
-} from 'lucide-react';
-import { Button } from '../../components/ui/Button';
-import { Card, CardContent } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { useNavigate } from 'react-router-dom';
+} from 'lucide-react'
+import { Button } from '../../components/ui/Button'
+import { Card, CardContent } from '../../components/ui/Card'
+import { Badge } from '../../components/ui/Badge'
+import { useNavigate } from 'react-router-dom'
 
 interface ReportCard {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  path: string;
-  color: 'primary' | 'secondary' | 'success' | 'warning' | 'info';
-  status: 'available' | 'coming-soon';
+  title: string
+  description: string
+  icon: React.ReactNode
+  path: string
+  color: 'primary' | 'secondary' | 'success' | 'warning' | 'info'
+  status: 'available' | 'coming-soon'
 }
 
 export default function ReportsPage() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   const reportCards: ReportCard[] = [
     {
       title: '학생 성취기록카드',
-      description: '개별 학생의 핸드북 진도와 출석 현황을 확인할 수 있는 상세 보고서입니다.',
+      description:
+        '개별 학생의 핸드북 진도와 출석 현황을 확인할 수 있는 상세 보고서입니다.',
       icon: <PersonIcon />,
       path: '/reports/student-progress',
       color: 'primary',
@@ -33,7 +34,8 @@ export default function ReportsPage() {
     },
     {
       title: '교회 통계 대시보드',
-      description: '교회 전체 학생 수, 출석율, 진도율 등의 종합 통계를 제공합니다.',
+      description:
+        '교회 전체 학생 수, 출석율, 진도율 등의 종합 통계를 제공합니다.',
       icon: <BarChartIcon />,
       path: '/reports/church-statistics',
       color: 'success',
@@ -41,7 +43,8 @@ export default function ReportsPage() {
     },
     {
       title: '클럽별 보고서',
-      description: 'SPARKS, T&T, Trek 등 클럽별 학생 현황과 진도 통계를 확인합니다.',
+      description:
+        'SPARKS, T&T, Trek 등 클럽별 학생 현황과 진도 통계를 확인합니다.',
       icon: <SchoolIcon />,
       path: '/reports/club-reports',
       color: 'info',
@@ -63,13 +66,13 @@ export default function ReportsPage() {
       color: 'secondary',
       status: 'coming-soon',
     },
-  ];
+  ]
 
   const handleReportClick = (report: ReportCard) => {
     if (report.status === 'available') {
-      navigate(report.path);
+      navigate(report.path)
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -78,7 +81,9 @@ export default function ReportsPage() {
           <Card
             key={index}
             className={`cursor-pointer transition-all hover:shadow-lg ${
-              report.status === 'coming-soon' ? 'opacity-70' : 'hover:-translate-y-1'
+              report.status === 'coming-soon'
+                ? 'opacity-70'
+                : 'hover:-translate-y-1'
             }`}
             onClick={() => handleReportClick(report)}
           >
@@ -88,9 +93,7 @@ export default function ReportsPage() {
                   {report.icon}
                 </div>
                 <div className="flex-grow">
-                  <h3 className="font-semibold text-lg">
-                    {report.title}
-                  </h3>
+                  <h3 className="font-semibold text-lg">{report.title}</h3>
                   {report.status === 'coming-soon' && (
                     <Badge variant="outline" className="mt-1">
                       준비중
@@ -103,9 +106,7 @@ export default function ReportsPage() {
               </p>
               {report.status === 'available' && (
                 <div className="mt-4">
-                  <Button size="sm">
-                    보기
-                  </Button>
+                  <Button size="sm">보기</Button>
                 </div>
               )}
             </CardContent>
@@ -114,15 +115,21 @@ export default function ReportsPage() {
       </div>
 
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">
-          💡 보고서 활용 Tip
-        </h2>
+        <h2 className="text-xl font-semibold mb-4">💡 보고서 활용 Tip</h2>
         <div className="space-y-2 text-muted-foreground">
-          <p>• 학생 성취기록카드는 학부모 상담 시 유용하게 활용할 수 있습니다.</p>
-          <p>• 정기적인 보고서를 통해 학생들의 성장 추이를 파악하고 개선 방향을 설정하세요.</p>
-          <p>• 데이터 기반 의사결정으로 더 효과적인 교육 프로그램을 운영할 수 있습니다.</p>
+          <p>
+            • 학생 성취기록카드는 학부모 상담 시 유용하게 활용할 수 있습니다.
+          </p>
+          <p>
+            • 정기적인 보고서를 통해 학생들의 성장 추이를 파악하고 개선 방향을
+            설정하세요.
+          </p>
+          <p>
+            • 데이터 기반 의사결정으로 더 효과적인 교육 프로그램을 운영할 수
+            있습니다.
+          </p>
         </div>
       </Card>
     </div>
-  );
+  )
 }

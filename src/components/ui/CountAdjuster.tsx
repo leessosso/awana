@@ -7,7 +7,7 @@ interface CountAdjusterProps {
   disabled?: boolean
 }
 
-export function CountAdjuster ({
+export function CountAdjuster({
   value,
   onChange,
   disabled = false,

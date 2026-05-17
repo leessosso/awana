@@ -5,7 +5,6 @@ import { Alert, AlertDescription } from '../../components/ui/Alert'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Club } from '../../constants/clubs'
 import { calculateTotalScores, teamColors, type GameTimeProgram } from '../../models/GameTimeScore'
-import { useAuthStore } from '../../store/authStore'
 import { useGameTimeStore } from '../../store/gameTimeStore'
 import { useTeamActivityScoreStore } from '../../store/teamActivityScoreStore'
 
@@ -94,8 +93,8 @@ function RollingNumber ({
 }
 
 export default function GameTimeRevealPage () {
-  const { user } = useAuthStore()
-  const [searchParams] = useSearchParams()
+  // @ts-ignore
+  const [searchParams, ] = useSearchParams()
   const [selectedDate, setSelectedDate] = useState(searchParams.get('date') || getKoreanDateString())
   const [selectedProgram, setSelectedProgram] = useState<GameTimeProgram>(
     parseProgram(searchParams.get('program'))
@@ -119,14 +118,14 @@ export default function GameTimeRevealPage () {
   } = useTeamActivityScoreStore()
 
   useEffect(() => {
-    if (!user?.churchId || !selectedDate) return
+    if (!selectedDate) return
     const date = new Date(selectedDate)
     fetchGameTimeSession(date, selectedProgram)
     fetchTeamActivitySession(date, selectedProgram)
     setRevealSeed(0)
     setIsRankVisible(false)
     setIsFinalVisible(false)
-  }, [user?.churchId, selectedDate, selectedProgram, fetchGameTimeSession, fetchTeamActivitySession])
+  }, [selectedDate, selectedProgram, fetchGameTimeSession, fetchTeamActivitySession])
 
   useEffect(() => {
     const onFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement))

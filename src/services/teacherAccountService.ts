@@ -1,79 +1,87 @@
-import { createUserWithEmailAndPassword, getAuth, updateProfile } from 'firebase/auth';
-import { initializeApp, getApps } from 'firebase/app';
-import { collection, getDocs, limit, query, setDoc, where, doc } from 'firebase/firestore';
-import { app, db, isFirebaseConfigured } from '../config/firebase';
-import type {
-  TeacherProgram,
-  TeacherTeam,
-  User,
-} from '../models/User';
-import { TeacherPosition, UserRole } from '../models/User';
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  updateProfile,
+} from 'firebase/auth'
+import { initializeApp, getApps } from 'firebase/app'
+import {
+  collection,
+  getDocs,
+  limit,
+  query,
+  setDoc,
+  where,
+  doc,
+} from 'firebase/firestore'
+import { app, db, isFirebaseConfigured } from '../config/firebase'
+import type { TeacherProgram, TeacherTeam, User } from '../models/User'
+import { TeacherPosition, UserRole } from '../models/User'
 import {
   normalizeLoginInput,
   toLoginEmail,
   toLoginIndexKey,
-} from '../utils/loginIdentity';
+} from '../utils/loginIdentity'
 
 interface CreateTeacherAccountRequest {
-  displayName: string;
-  loginId: string;
-  password: string;
-  churchId: string;
-  churchName: string;
-  position?: TeacherPosition;
-  program?: TeacherProgram;
-  team?: TeacherTeam;
-  headTeacherId?: string;
+  displayName: string
+  loginId: string
+  password: string
+  churchId: string
+  churchName: string
+  position?: TeacherPosition
+  program?: TeacherProgram
+  team?: TeacherTeam
+  headTeacherId?: string
 }
 
-const SECONDARY_APP_NAME = 'teacher-account-manager';
-const LOGIN_ID_PATTERN = /^[a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ._-]{2,30}$/i;
+const SECONDARY_APP_NAME = 'teacher-account-manager'
+const LOGIN_ID_PATTERN = /^[a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ._-]{2,30}$/i
 
 export async function createTeacherAccount(
-  payload: CreateTeacherAccountRequest
+  payload: CreateTeacherAccountRequest,
 ): Promise<User> {
   if (!isFirebaseConfigured() || !app || !db) {
-    throw new Error('Firebase가 설정되지 않았습니다.');
+    throw new Error('Firebase가 설정되지 않았습니다.')
   }
 
-  const loginId = normalizeLoginInput(payload.loginId);
+  const loginId = normalizeLoginInput(payload.loginId)
   if (!LOGIN_ID_PATTERN.test(loginId)) {
-    throw new Error('아이디는 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.');
+    throw new Error('아이디는 한글/영문/숫자/._- 조합으로 2~30자여야 합니다.')
   }
 
   if (payload.password.trim().length < 6) {
-    throw new Error('비밀번호는 6자 이상이어야 합니다.');
+    throw new Error('비밀번호는 6자 이상이어야 합니다.')
   }
 
   const duplicateQuery = query(
     collection(db, 'users'),
     where('loginId', '==', loginId),
-    limit(1)
-  );
-  const duplicateSnapshot = await getDocs(duplicateQuery);
+    limit(1),
+  )
+  const duplicateSnapshot = await getDocs(duplicateQuery)
   if (!duplicateSnapshot.empty) {
-    throw new Error('이미 사용 중인 아이디입니다.');
+    throw new Error('이미 사용 중인 아이디입니다.')
   }
 
   const secondaryApp =
     getApps().find((candidate) => candidate.name === SECONDARY_APP_NAME) ||
-    initializeApp(app.options, SECONDARY_APP_NAME);
-  const secondaryAuth = getAuth(secondaryApp);
+    initializeApp(app.options, SECONDARY_APP_NAME)
+  const secondaryAuth = getAuth(secondaryApp)
 
-  const email = toLoginEmail(loginId);
+  const email = toLoginEmail(loginId)
   const userCredential = await createUserWithEmailAndPassword(
     secondaryAuth,
     email,
-    payload.password.trim()
-  );
-  const firebaseUser = userCredential.user;
+    payload.password.trim(),
+  )
+  const firebaseUser = userCredential.user
 
-  await updateProfile(firebaseUser, { displayName: payload.displayName.trim() });
+  await updateProfile(firebaseUser, { displayName: payload.displayName.trim() })
 
   const normalizedHeadTeacherId =
     payload.position === TeacherPosition.ASSISTANT
       ? payload.headTeacherId
-      : undefined;
+      : undefined
   const normalizedTeam =
     payload.position === TeacherPosition.OPERATIONS_TEACHER
       ? undefined
@@ -96,20 +104,20 @@ export async function createTeacherAccount(
     churchId: payload.churchId,
     churchName: payload.churchName,
     createdAt: new Date(),
-  };
+  }
 
   const teacherDataForWrite = Object.fromEntries(
-    Object.entries(teacherData).filter(([, value]) => value !== undefined)
-  );
+    Object.entries(teacherData).filter(([, value]) => value !== undefined),
+  )
 
-  await setDoc(doc(db, 'users', firebaseUser.uid), teacherDataForWrite);
+  await setDoc(doc(db, 'users', firebaseUser.uid), teacherDataForWrite)
   await setDoc(doc(db, 'loginIndex', toLoginIndexKey(loginId)), {
     email,
     loginId,
     uid: firebaseUser.uid,
     churchId: payload.churchId,
     createdAt: new Date(),
-  });
+  })
 
-  return teacherData;
+  return teacherData
 }

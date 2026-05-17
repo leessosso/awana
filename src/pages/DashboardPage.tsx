@@ -1,88 +1,78 @@
-import { useEffect, useState } from 'react';
-import { Users, CheckCircle2, Book } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
-import { useStudentStore } from '../store/studentStore';
-import { useAttendanceStore } from '../store/attendanceStore';
-import { useHandbookStore } from '../store/handbookStore';
-import { AttendanceStatus } from '../models/Attendance';
-import { Card, CardContent } from '../components/ui/Card';
-import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import { useEffect, useState } from 'react'
+import { Users, CheckCircle2, Book } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
+import { useStudentStore } from '../store/studentStore'
+import { useAttendanceStore } from '../store/attendanceStore'
+import { useSparksHandbookStore } from '../store/sparksHandbookStore'
+import { AttendanceStatus } from '../models/Attendance'
+import { Card, CardContent } from '../components/ui/Card'
+import { Avatar, AvatarFallback } from '../components/ui/avatar'
+
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
-  const { students, fetchStudents } = useStudentStore();
-  const { attendances, fetchAttendances } = useAttendanceStore();
-  const { handbookProgresses, fetchHandbookProgresses } = useHandbookStore();
+  const { user } = useAuthStore()
+  const { students } = useStudentStore()
+  const { attendances } = useAttendanceStore()
+  const { studentSummaries } = useSparksHandbookStore()
 
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [todayAttendance, setTodayAttendance] = useState(0);
-  const [completedHandbooks, setCompletedHandbooks] = useState(0);
+  const [totalStudents, setTotalStudents] = useState(0)
+  const [todayAttendance, setTodayAttendance] = useState(0)
+  const [completedHandbooks, setCompletedHandbooks] = useState(0)
 
   // 오늘 날짜 계산 (한국 시간 기준)
   const getKoreanDateString = () => {
-    const now = new Date();
+    const now = new Date()
     // 한국 시간으로 변환 (UTC+9)
-    const koreanTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-    return koreanTime.toISOString().split('T')[0];
-  };
+    const koreanTime = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+    return koreanTime.toISOString().split('T')[0]
+  }
 
-  const today = getKoreanDateString();
-
-  // 데이터 로딩 및 계산
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      if (!user?.churchId) return;
-
-      try {
-        // 학생 데이터 로딩
-        await fetchStudents();
-
-        // 오늘 출석 데이터 로딩
-        await fetchAttendances(user.churchId, today);
-
-        // 핸드북 진도 데이터 로딩
-        await fetchHandbookProgresses(user.churchId);
-      } catch (error) {
-        console.error('대시보드 데이터 로딩 실패:', error);
-      }
-    };
-
-    loadDashboardData();
-  }, [user?.churchId, fetchStudents, fetchAttendances, fetchHandbookProgresses, today]);
+  const today = getKoreanDateString()
 
   // 학생 수 계산
   useEffect(() => {
-    setTotalStudents(students.length);
-  }, [students]);
+    setTotalStudents(students.length)
+  }, [students])
 
   // 오늘 출석 수 계산
   useEffect(() => {
-    console.log('Dashboard - attendances data:', attendances);
-    console.log('Dashboard - today date:', today);
+    console.log('Dashboard - attendances data:', attendances)
+    console.log('Dashboard - today date:', today)
 
     // 오늘 날짜의 출석 데이터만 필터링
-    const todayAttendances = attendances.filter(attendance => {
-      const attendanceDate = attendance.date.toISOString().split('T')[0];
-      return attendanceDate === today;
-    });
+    const todayAttendances = attendances.filter((attendance) => {
+      const attendanceDate = attendance.date.toISOString().split('T')[0]
+      return attendanceDate === today
+    })
 
-    console.log('Dashboard - today filtered attendances:', todayAttendances);
+    console.log('Dashboard - today filtered attendances:', todayAttendances)
 
-    const presentCount = todayAttendances.filter(attendance =>
-      attendance.status === AttendanceStatus.PRESENT
-    ).length;
+    const presentCount = todayAttendances.filter(
+      (attendance) => attendance.status === AttendanceStatus.PRESENT,
+    ).length
 
-    console.log('Dashboard - today attendance count:', presentCount);
-    setTodayAttendance(presentCount);
-  }, [attendances, today]);
+    console.log('Dashboard - today attendance count:', presentCount)
+    setTodayAttendance(presentCount)
+  }, [attendances, today])
 
-  // 핸드북 완료 수 계산
+  // 핸드북 완료 수 계산 (섹션 통과 기록 총합)
   useEffect(() => {
-    const completedCount = handbookProgresses.filter(progress =>
-      progress.completedDate
-    ).length;
-    setCompletedHandbooks(completedCount);
-  }, [handbookProgresses]);
+    const completedCount = Array.from(studentSummaries.values()).reduce(
+      (total, summary) => {
+        return (
+          total +
+          summary.hangGliderProgress.redCompleted +
+          summary.hangGliderProgress.greenCompleted +
+          summary.wingRunnerProgress.redCompleted +
+          summary.wingRunnerProgress.greenCompleted +
+          summary.skyStormerProgress.redCompleted +
+          summary.skyStormerProgress.greenCompleted
+        )
+      },
+      0,
+    )
+    setCompletedHandbooks(completedCount)
+  }, [studentSummaries])
 
   return (
     <div className="space-y-6">
@@ -107,7 +97,9 @@ export default function DashboardPage() {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold">{totalStudents}</div>
+                <div className="text-2xl sm:text-3xl font-bold">
+                  {totalStudents}
+                </div>
                 <p className="text-sm text-muted-foreground">총 학생 수</p>
               </div>
             </div>
@@ -123,7 +115,9 @@ export default function DashboardPage() {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold">{todayAttendance}</div>
+                <div className="text-2xl sm:text-3xl font-bold">
+                  {todayAttendance}
+                </div>
                 <p className="text-sm text-muted-foreground">오늘 출석</p>
               </div>
             </div>
@@ -139,7 +133,9 @@ export default function DashboardPage() {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold">{completedHandbooks}</div>
+                <div className="text-2xl sm:text-3xl font-bold">
+                  {completedHandbooks}
+                </div>
                 <p className="text-sm text-muted-foreground">핸드북 완료</p>
               </div>
             </div>
@@ -184,5 +180,5 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
-  );
+  )
 }

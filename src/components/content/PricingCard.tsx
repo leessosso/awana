@@ -1,22 +1,22 @@
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { Badge } from '../ui/Badge';
+import { Card } from '../ui/Card'
+import { Button } from '../ui/Button'
+import { Badge } from '../ui/Badge'
 
 interface PricingFeature {
-  text: string;
-  included: boolean;
+  text: string
+  included: boolean
 }
 
 interface PricingCardProps {
-  name: string;
-  price: number;
-  period?: string;
-  description: string;
-  features: PricingFeature[];
-  buttonText: string;
-  onButtonClick?: () => void;
-  popular?: boolean;
-  className?: string;
+  name: string
+  price: number
+  period?: string
+  description: string
+  features: PricingFeature[]
+  buttonText: string
+  onButtonClick?: () => void
+  popular?: boolean
+  className?: string
 }
 
 export function PricingCard({
@@ -41,20 +41,14 @@ export function PricingCard({
       )}
 
       <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-card-foreground mb-2">
-          {name}
-        </h3>
+        <h3 className="text-2xl font-bold text-card-foreground mb-2">{name}</h3>
         <div className="mb-4">
           <span className="text-4xl font-bold text-card-foreground">
             ₩{price.toLocaleString()}
           </span>
-          {period && (
-            <span className="text-muted-foreground">/{period}</span>
-          )}
+          {period && <span className="text-muted-foreground">/{period}</span>}
         </div>
-        <p className="text-muted-foreground">
-          {description}
-        </p>
+        <p className="text-muted-foreground">{description}</p>
       </div>
 
       <div className="mb-8">
@@ -70,7 +64,9 @@ export function PricingCard({
               </span>
               <span
                 className={`${
-                  feature.included ? 'text-card-foreground' : 'text-muted-foreground line-through'
+                  feature.included
+                    ? 'text-card-foreground'
+                    : 'text-muted-foreground line-through'
                 }`}
               >
                 {feature.text}
@@ -88,5 +84,5 @@ export function PricingCard({
         {buttonText}
       </Button>
     </Card>
-  );
+  )
 }

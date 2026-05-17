@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLoaderData } from 'react-router-dom';
 import { useMobile } from '../../hooks/useMobile';
 import { Search, CheckCircle, Play, Calendar } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -24,9 +24,6 @@ import { DataTable } from '../../components/data-visualization/DataTable';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useAuthStore } from '../../store/authStore';
 import { Club, CLUB_OPTIONS } from '../../constants';
-import { canManageChurchData, canManageHandbook, getScopedTeacherId } from '../../utils/permissions';
-import { studentService } from '../../services/studentService';
-import { userService } from '../../services/userService';
 import type { User } from '../../models/User';
 import { useSparksHandbookStore } from '../../store/sparksHandbookStore';
 import { SPARKS_HANDBOOKS } from '../../constants/sparksHandbooks';
@@ -36,10 +33,10 @@ import { AttendanceStatus } from '../../models/Attendance';
 import type { Student } from '../../models/Student';
 
 export default function HandbookPage() {
+  const { students, teachers, attendances } = useLoaderData() as { students: Student[], teachers: User[], attendances: any[] };
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [students, setStudents] = useState<Student[]>([]);
-  const {
+    const {
     studentSummaries,
     studentProgresses,
     fetchStudentSummary,
@@ -51,7 +48,6 @@ export default function HandbookPage() {
   } = useSparksHandbookStore();
 
   const {
-    attendances,
     fetchAttendances,
     createAttendance,
     updateAttendance,
@@ -61,55 +57,12 @@ export default function HandbookPage() {
   const [selectedClub, setSelectedClub] = useState<Club>(Club.SPARKS);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [studentsByTeacher, setStudentsByTeacher] = useState<Map<string, Student[]>>(new Map());
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const isMobile = useMobile();
+    const isMobile = useMobile();
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedAttendances, setSelectedAttendances] = useState<Set<string>>(new Set());
 
-  // 선생님 목록 가져오기
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      if (user?.churchId) {
-        try {
-          const teacherList = await userService.getTeachersByChurch(user.churchId);
-          setTeachers(teacherList);
-        } catch (error) {
-          console.error('선생님 목록 가져오기 실패:', error);
-        }
-      }
-    };
-    fetchTeachers();
-  }, [user?.churchId]);
-
-  // 핸드북 페이지용 학생 목록 가져오기
-  const fetchHandbookStudents = async () => {
-    if (!user?.churchId) return;
-
-    try {
-      const canViewAllStudents = canManageChurchData(user) || canManageHandbook(user);
-      const teacherId = canViewAllStudents ? undefined : getScopedTeacherId(user);
-
-      const allStudents = await studentService.getStudentsByChurch(user.churchId, teacherId);
-
-      setStudents(allStudents);
-    } catch (error) {
-      console.error('학생 목록 가져오기 실패:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchHandbookStudents();
-  }, [user?.churchId, user?.uid]);
-
-  // 출결 데이터 가져오기
-  useEffect(() => {
-    if (user?.churchId) {
-      fetchAttendances(user.churchId, selectedDate);
-    }
-  }, [user?.churchId, selectedDate, fetchAttendances]);
-
-  // 선택된 클럽 학생들의 진도 요약 가져오기
+        // 선택된 클럽 학생들의 진도 요약 가져오기
   useEffect(() => {
     if (students && user?.churchId && selectedClub === Club.SPARKS) {
       const clubStudents = students.filter(student => student.club === selectedClub);
@@ -328,13 +281,6 @@ export default function HandbookPage() {
   // 데스크톱 테이블 컬럼 정의
   const columns: ColumnDef<typeof tableData[0]>[] = [
     {
-      accessorKey: 'teacher',
-      header: '담당 선생님',
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">{row.original.teacher}</div>
-      ),
-    },
-    {
       accessorKey: 'name',
       header: '학생 이름',
       cell: ({ row }) => (
@@ -344,7 +290,7 @@ export default function HandbookPage() {
     ...(selectedClub === Club.SPARKS ? [{
       accessorKey: 'quickComplete',
       header: '빠른 완료',
-      cell: ({ row }: any) => (
+      cell: ({ row }: { row: any }) => (
         <Button
           size="sm"
           variant="outline"
@@ -362,7 +308,7 @@ export default function HandbookPage() {
     ...(selectedClub === Club.SPARKS ? [{
       accessorKey: 'todayCompleted',
       header: '오늘 완료',
-      cell: ({ row }: any) => (
+      cell: ({ row }: { row: any }) => (
         <div className="text-sm text-muted-foreground">
           {row.original.todayCompleted}개
         </div>
@@ -380,12 +326,19 @@ export default function HandbookPage() {
     ...(selectedClub === Club.SPARKS ? [{
       accessorKey: 'lastCompleted',
       header: '마지막 완료',
-      cell: ({ row }: any) => (
+      cell: ({ row }: { row: any }) => (
         <div className="text-sm text-muted-foreground">
           {row.original.lastCompleted}
         </div>
       ),
     }] : []),
+    {
+      accessorKey: 'teacher',
+      header: '담당 선생님',
+      cell: ({ row }) => (
+        <div className="text-sm text-muted-foreground">{row.original.teacher}</div>
+      ),
+    },
   ];
 
   return (

@@ -25,14 +25,15 @@ import {
   normalizeTeamActivitySessionData,
 } from '../models/TeamActivityScore'
 
-export class TeamActivityScoreService {
-  async createTeamActivitySession (
+export async function createTeamActivitySession(
     sessionData: TeamActivitySessionFormData,
     createdBy: string,
-    churchId: string
+    churchId: string,
   ): Promise<TeamActivitySession> {
     if (!isFirebaseConfigured() || !db) {
-      throw new Error('Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.')
+      throw new Error(
+        'Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.',
+      )
     }
 
     try {
@@ -68,12 +69,14 @@ export class TeamActivityScoreService {
     }
   }
 
-  async updateTeamActivitySession (
+export async function updateTeamActivitySession(
     sessionId: string,
-    sessionData: Partial<TeamActivitySessionFormData>
+    sessionData: Partial<TeamActivitySessionFormData>,
   ): Promise<void> {
     if (!isFirebaseConfigured() || !db) {
-      throw new Error('Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.')
+      throw new Error(
+        'Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.',
+      )
     }
 
     try {
@@ -85,9 +88,14 @@ export class TeamActivityScoreService {
         updateData.program = sessionData.program
       }
 
-      if (sessionData.countsByTeam !== undefined || sessionData.teacherEntriesByTeam !== undefined) {
+      if (
+        sessionData.countsByTeam !== undefined ||
+        sessionData.teacherEntriesByTeam !== undefined
+      ) {
         const snapshot = await getDoc(doc(db, 'teamActivityScores', sessionId))
-        const currentData = snapshot.data() as TeamActivitySessionFormData | undefined
+        const currentData = snapshot.data() as
+          | TeamActivitySessionFormData
+          | undefined
         let normalized
 
         if (sessionData.teacherEntriesByTeam !== undefined) {
@@ -100,14 +108,17 @@ export class TeamActivityScoreService {
           })
         } else {
           normalized = normalizeTeamActivitySessionData({
-            countsByTeam: currentData?.countsByTeam ?? createEmptyCountsByTeam(),
+            countsByTeam:
+              currentData?.countsByTeam ?? createEmptyCountsByTeam(),
             teacherEntriesByTeam: currentData?.teacherEntriesByTeam,
           })
         }
 
         updateData.countsByTeam = normalized.countsByTeam
         updateData.teacherEntriesByTeam = normalized.teacherEntriesByTeam
-        updateData.totalScores = calculateTeamActivityTotalScores(normalized.countsByTeam)
+        updateData.totalScores = calculateTeamActivityTotalScores(
+          normalized.countsByTeam,
+        )
       }
 
       await updateDoc(doc(db, 'teamActivityScores', sessionId), updateData)
@@ -117,9 +128,11 @@ export class TeamActivityScoreService {
     }
   }
 
-  async deleteTeamActivitySession (sessionId: string): Promise<void> {
+export async function deleteTeamActivitySession(sessionId: string): Promise<void> {
     if (!isFirebaseConfigured() || !db) {
-      throw new Error('Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.')
+      throw new Error(
+        'Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.',
+      )
     }
 
     try {
@@ -130,14 +143,16 @@ export class TeamActivityScoreService {
     }
   }
 
-  async updateTeacherTeamCounts (
+export async function updateTeacherTeamCounts(
     sessionId: string,
     team: TeamKey,
     teacherId: string,
-    counts: TeamActivityCounts
+    counts: TeamActivityCounts,
   ): Promise<void> {
     if (!isFirebaseConfigured() || !db) {
-      throw new Error('Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.')
+      throw new Error(
+        'Firebase가 설정되지 않았습니다. Firebase 프로젝트를 설정해주세요.',
+      )
     }
 
     const firestore = db
@@ -179,10 +194,10 @@ export class TeamActivityScoreService {
     }
   }
 
-  async getTeamActivitySessionByDate (
+export async function getTeamActivitySessionByDate(
     date: Date,
     churchId: string,
-    program: TeamActivityProgram
+    program: TeamActivityProgram,
   ): Promise<TeamActivitySession | null> {
     if (!isFirebaseConfigured() || !db) {
       return null
@@ -191,7 +206,7 @@ export class TeamActivityScoreService {
     try {
       const q = query(
         collection(db, 'teamActivityScores'),
-        where('churchId', '==', churchId)
+        where('churchId', '==', churchId),
       )
       const snapshot = await getDocs(q)
       const targetDateStr = date.toISOString().split('T')[0]
@@ -210,7 +225,8 @@ export class TeamActivityScoreService {
             countsByTeam: normalized.countsByTeam,
             teacherEntriesByTeam: normalized.teacherEntriesByTeam,
             totalScores:
-              data.totalScores || calculateTeamActivityTotalScores(normalized.countsByTeam),
+              data.totalScores ||
+              calculateTeamActivityTotalScores(normalized.countsByTeam),
             date:
               data.date instanceof Timestamp
                 ? data.date.toDate()
@@ -239,6 +255,4 @@ export class TeamActivityScoreService {
       throw error
     }
   }
-}
 
-export const teamActivityScoreService = new TeamActivityScoreService()

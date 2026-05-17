@@ -4,7 +4,7 @@ import type {
   GameTimeSessionFormData,
   GameTimeProgram,
 } from '../models/GameTimeScore'
-import { gameTimeService } from '../services/gameTimeService'
+import * as gameTimeService from '../services/gameTimeService'
 import { useAuthStore } from './authStore'
 
 interface GameTimeState {
@@ -16,7 +16,7 @@ interface GameTimeState {
   createGameTimeSession: (sessionData: GameTimeSessionFormData) => Promise<void>
   updateGameTimeSession: (
     sessionId: string,
-    sessionData: Partial<GameTimeSessionFormData>
+    sessionData: Partial<GameTimeSessionFormData>,
   ) => Promise<void>
   deleteGameTimeSession: (sessionId: string) => Promise<void>
   fetchGameTimeHistory: () => Promise<void>
@@ -41,7 +41,7 @@ export const useGameTimeStore = create<GameTimeState>((set, get) => ({
       const session = await gameTimeService.getGameTimeSessionByDate(
         date,
         user.churchId,
-        program
+        program,
       )
       set({ currentSession: session, isLoading: false })
     } catch (error) {
@@ -66,7 +66,7 @@ export const useGameTimeStore = create<GameTimeState>((set, get) => ({
       await gameTimeService.createGameTimeSession(
         sessionData,
         user.uid,
-        user.churchId
+        user.churchId,
       )
       // 새로고침을 위해 현재 날짜와 프로그램의 세션을 다시 불러옴
       await get().fetchGameTimeSession(sessionData.date, sessionData.program)
@@ -85,14 +85,13 @@ export const useGameTimeStore = create<GameTimeState>((set, get) => ({
 
   updateGameTimeSession: async (
     sessionId: string,
-    sessionData: Partial<GameTimeSessionFormData>
+    sessionData: Partial<GameTimeSessionFormData>,
   ) => {
     set({ isLoading: true, error: null })
     try {
       await gameTimeService.updateGameTimeSession(sessionId, sessionData)
       // 날짜와 프로그램이 있으면 해당 값으로, 없으면 현재 세션의 값으로 새로고침
-      const date =
-        sessionData.date || get().currentSession?.date || new Date()
+      const date = sessionData.date || get().currentSession?.date || new Date()
       const program =
         sessionData.program || get().currentSession?.program || 'Sparks'
       await get().fetchGameTimeSession(date, program as GameTimeProgram)
@@ -135,12 +134,10 @@ export const useGameTimeStore = create<GameTimeState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const sessions = await gameTimeService.getGameTimeSessionsByChurch(
-        user.churchId
+        user.churchId,
       )
       // 날짜순으로 정렬 (최신순)
-      sessions.sort(
-        (a, b) => b.date.getTime() - a.date.getTime()
-      )
+      sessions.sort((a, b) => b.date.getTime() - a.date.getTime())
       set({ gameTimeHistory: sessions, isLoading: false })
     } catch (error) {
       set({

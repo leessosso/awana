@@ -1,8 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Calendar, CheckCircle, Edit, Save, Trash2 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import { Badge, Input, Alert, AlertDescription, CountAdjuster } from '../../components/ui'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
+import {
+  Badge,
+  Input,
+  Alert,
+  AlertDescription,
+  CountAdjuster,
+} from '../../components/ui'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/Card'
 import {
   Dialog,
   DialogContent,
@@ -33,10 +45,14 @@ import { useAuthStore } from '../../store/authStore'
 import { useAttendanceStore } from '../../store/attendanceStore'
 import { useToast } from '../../hooks/use-toast'
 import { TeacherPosition, UserRole } from '../../models/User'
-import { userService } from '../../services/userService'
-import { studentService } from '../../services/studentService'
+import * as userService from '../../services/userService'
+import * as studentService from '../../services/studentService'
 import { AttendanceStatus } from '../../models/Attendance'
-import { canManageChurchData, canViewReports, getScopedTeacherId } from '../../utils/permissions'
+import {
+  canManageChurchData,
+  canViewReports,
+  getScopedTeacherId,
+} from '../../utils/permissions'
 import { useMobile } from '../../hooks/useMobile'
 import type { User } from '../../models/User'
 import type { Student } from '../../models/Student'
@@ -47,20 +63,34 @@ const metricOrder: Array<{
   label: string
   point: number
 }> = [
-  { key: 'attendance', label: '출석', point: teamActivityScoreRules.attendance },
+  {
+    key: 'attendance',
+    label: '출석',
+    point: teamActivityScoreRules.attendance,
+  },
   { key: 'handbook', label: '핸드북', point: teamActivityScoreRules.handbook },
   { key: 'uniform', label: '단복', point: teamActivityScoreRules.uniform },
-  { key: 'evangelism', label: '전도', point: teamActivityScoreRules.evangelism },
-  { key: 'sectionPasses', label: '단원통과', point: teamActivityScoreRules.sectionPasses },
+  {
+    key: 'evangelism',
+    label: '전도',
+    point: teamActivityScoreRules.evangelism,
+  },
+  {
+    key: 'sectionPasses',
+    label: '단원통과',
+    point: teamActivityScoreRules.sectionPasses,
+  },
 ]
 
-function getKoreanDateString () {
+function getKoreanDateString() {
   const now = new Date()
   const koreanTime = new Date(now.getTime() + 9 * 60 * 60 * 1000)
   return koreanTime.toISOString().split('T')[0]
 }
 
-function calculateRankings (scores: Record<TeamKey, number>): Record<TeamKey, number> {
+function calculateRankings(
+  scores: Record<TeamKey, number>,
+): Record<TeamKey, number> {
   const sorted = Object.entries(scores)
     .map(([team, score]) => ({ team: team as TeamKey, score }))
     .sort((a, b) => b.score - a.score)
@@ -80,60 +110,65 @@ function calculateRankings (scores: Record<TeamKey, number>): Record<TeamKey, nu
   return rankings
 }
 
-export default function TeamActivityScorePage () {
+export default function TeamActivityScorePage() {
   const isMobile = useMobile()
   const { user } = useAuthStore()
   const { toast } = useToast()
-  const [selectedDate, setSelectedDate] = useState(getKoreanDateString())
-  const [selectedProgram, setSelectedProgram] = useState<TeamActivityProgram>(Club.SPARKS)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedDate = searchParams.get('date') || getKoreanDateString()
+  const selectedProgram = (searchParams.get('program') as TeamActivityProgram) || Club.SPARKS
+
+  const handleDateChange = (date: string) => {
+    setIsEditing(false)
+    setSearchParams({ date, program: selectedProgram })
+  }
+
+  const handleProgramChange = (program: string) => {
+    setIsEditing(false)
+    setSearchParams({ date: selectedDate, program })
+  }
+
   const [countsByTeam, setCountsByTeam] = useState(createEmptyCountsByTeam())
-  const [teacherEntriesByTeam, setTeacherEntriesByTeam] = useState<TeamActivityTeacherEntriesByTeam>(
-    createEmptyTeacherEntriesByTeam()
-  )
+  const [teacherEntriesByTeam, setTeacherEntriesByTeam] =
+    useState<TeamActivityTeacherEntriesByTeam>(
+      createEmptyTeacherEntriesByTeam(),
+    )
   const [isEditing, setIsEditing] = useState(false)
   const [teachers, setTeachers] = useState<User[]>([])
   const [students, setStudents] = useState<Student[]>([])
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false)
-  const [selectedAttendances, setSelectedAttendances] = useState<Set<string>>(new Set())
+  const [selectedAttendances, setSelectedAttendances] = useState<Set<string>>(
+    new Set(),
+  )
 
   const {
     currentSession,
     isLoading,
     error,
-    fetchTeamActivitySession,
     createTeamActivitySession,
     updateTeamActivitySession,
     updateTeacherTeamCounts,
     deleteTeamActivitySession,
   } = useTeamActivityScoreStore()
-  const {
-    attendances,
-    fetchAttendances,
-    createAttendance,
-    updateAttendance,
-  } = useAttendanceStore()
+  const { attendances, fetchAttendances, createAttendance, updateAttendance } =
+    useAttendanceStore()
 
   const isTeacher = user?.role === UserRole.TEACHER
-  const isOperationsTeacher = isTeacher && (
-    user?.position === TeacherPosition.OPERATIONS_TEACHER ||
-    (user?.position as string | undefined) === 'admin_teacher'
-  )
+  const isOperationsTeacher =
+    isTeacher &&
+    (user?.position === TeacherPosition.OPERATIONS_TEACHER ||
+      (user?.position as string | undefined) === 'admin_teacher')
   const isScopedTeacher = isTeacher && !isOperationsTeacher
   const isAdminUser = user?.role === UserRole.ADMIN
   const teacherProgram = user?.program
   const teacherTeam = user?.team
   const canViewTeacherBreakdown = canViewReports(user)
-  const hasTeacherAssignment = !isScopedTeacher || (Boolean(teacherProgram) && Boolean(teacherTeam))
-  const canEditCurrentProgram = !isScopedTeacher || selectedProgram === teacherProgram
-  const editableTeams: TeamKey[] = isScopedTeacher && teacherTeam
-    ? [teacherTeam as TeamKey]
-    : teamOrder
-
-  useEffect(() => {
-    if (!user?.churchId || !selectedDate) return
-    setIsEditing(false)
-    fetchTeamActivitySession(new Date(selectedDate), selectedProgram)
-  }, [user?.churchId, selectedDate, selectedProgram, fetchTeamActivitySession])
+  const hasTeacherAssignment =
+    !isScopedTeacher || (Boolean(teacherProgram) && Boolean(teacherTeam))
+  const canEditCurrentProgram =
+    !isScopedTeacher || selectedProgram === teacherProgram
+  const editableTeams: TeamKey[] =
+    isScopedTeacher && teacherTeam ? [teacherTeam as TeamKey] : teamOrder
 
   useEffect(() => {
     if (!user?.churchId) return
@@ -145,9 +180,16 @@ export default function TeamActivityScorePage () {
 
     const fetchStudentsForAttendance = async () => {
       try {
-        const teacherId = canManageChurchData(user) ? undefined : getScopedTeacherId(user)
-        const studentList = await studentService.getStudentsByChurch(user.churchId as string, teacherId)
-        setStudents(studentList.filter((student) => student.club === selectedProgram))
+        const teacherId = canManageChurchData(user)
+          ? undefined
+          : getScopedTeacherId(user)
+        const studentList = await studentService.getStudentsByChurch(
+          user.churchId as string,
+          teacherId,
+        )
+        setStudents(
+          studentList.filter((student) => student.club === selectedProgram),
+        )
       } catch (error) {
         console.error('학생 목록 가져오기 실패:', error)
       }
@@ -158,9 +200,7 @@ export default function TeamActivityScorePage () {
 
   useEffect(() => {
     if (!isScopedTeacher || !teacherProgram) return
-    setSelectedProgram(
-      teacherProgram === Club.SPARKS ? Club.SPARKS : Club.TNT
-    )
+    
   }, [isScopedTeacher, teacherProgram])
 
   useEffect(() => {
@@ -172,7 +212,9 @@ export default function TeamActivityScorePage () {
     let isMounted = true
     const loadTeachers = async () => {
       try {
-        const teacherList = await userService.getTeachersByChurch(user.churchId as string)
+        const teacherList = await userService.getTeachersByChurch(
+          user.churchId as string,
+        )
         if (isMounted) {
           setTeachers(teacherList)
         }
@@ -204,21 +246,22 @@ export default function TeamActivityScorePage () {
 
   const totalScores = useMemo(
     () => calculateTeamActivityTotalScores(countsByTeam),
-    [countsByTeam]
+    [countsByTeam],
   )
   const rankings = useMemo(() => calculateRankings(totalScores), [totalScores])
 
   const handleCountChange = (
     team: TeamKey,
     key: keyof TeamActivityCounts,
-    nextValue: number
+    nextValue: number,
   ) => {
     if (!hasTeacherAssignment || !canEditCurrentProgram) return
     if (isScopedTeacher && teacherTeam && team !== teacherTeam) return
 
     const safeValue = Math.max(0, nextValue)
     if (isScopedTeacher && user?.uid) {
-      const currentTeamTeacherCounts = teacherEntriesByTeam[team][user.uid] || createEmptyTeamActivityCounts()
+      const currentTeamTeacherCounts =
+        teacherEntriesByTeam[team][user.uid] || createEmptyTeamActivityCounts()
       const nextTeamTeacherCounts = {
         ...currentTeamTeacherCounts,
         [key]: safeValue,
@@ -232,7 +275,9 @@ export default function TeamActivityScorePage () {
       }
 
       setTeacherEntriesByTeam(nextTeacherEntriesByTeam)
-      setCountsByTeam(calculateCountsByTeamFromTeacherEntries(nextTeacherEntriesByTeam))
+      setCountsByTeam(
+        calculateCountsByTeamFromTeacherEntries(nextTeacherEntriesByTeam),
+      )
       setIsEditing(true)
       return
     }
@@ -248,19 +293,21 @@ export default function TeamActivityScorePage () {
   }
 
   const handleSave = async () => {
-    if (!user?.churchId || !hasTeacherAssignment || !canEditCurrentProgram) return
+    if (!user?.churchId || !hasTeacherAssignment || !canEditCurrentProgram)
+      return
 
     try {
       if (isScopedTeacher && teacherTeam && user.uid) {
         const teacherCounts =
-          teacherEntriesByTeam[teacherTeam as TeamKey][user.uid] || createEmptyTeamActivityCounts()
+          teacherEntriesByTeam[teacherTeam as TeamKey][user.uid] ||
+          createEmptyTeamActivityCounts()
 
         if (currentSession) {
           await updateTeacherTeamCounts(
             currentSession.id,
             teacherTeam as TeamKey,
             user.uid,
-            teacherCounts
+            teacherCounts,
           )
           toast({
             title: '성공',
@@ -333,7 +380,11 @@ export default function TeamActivityScorePage () {
       })
       return
     }
-    if (!confirm(`정말로 이 ${selectedProgram} 팀 활동 점수 기록을 삭제하시겠습니까?`)) {
+    if (
+      !confirm(
+        `정말로 이 ${selectedProgram} 팀 활동 점수 기록을 삭제하시겠습니까?`,
+      )
+    ) {
       return
     }
 
@@ -363,53 +414,61 @@ export default function TeamActivityScorePage () {
       return countsByTeam[team]
     }
 
-    return teacherEntriesByTeam[team][user.uid] || createEmptyTeamActivityCounts()
+    return (
+      teacherEntriesByTeam[team][user.uid] || createEmptyTeamActivityCounts()
+    )
   }
 
   const getTeacherLabel = (teacherId: string): string => {
     const teacher = teachers.find((item) => item.uid === teacherId)
-    if (!teacher) return teacherId === legacyTeacherEntryId ? '기존 데이터' : '알 수 없음'
+    if (!teacher)
+      return teacherId === legacyTeacherEntryId ? '기존 데이터' : '알 수 없음'
     return teacher.displayName || teacher.loginId || teacher.email || teacherId
   }
 
   const getTeacherStatusRows = (team: TeamKey) => {
-    const assignedTeachers = teachers.filter((item) =>
-      item.program === selectedProgram &&
-      item.team === team
+    const assignedTeachers = teachers.filter(
+      (item) => item.program === selectedProgram && item.team === team,
     )
     const entryTeacherIds = Object.keys(teacherEntriesByTeam[team])
     const allTeacherIds = Array.from(
       new Set([
         ...assignedTeachers.map((item) => item.uid),
         ...entryTeacherIds,
-      ])
+      ]),
     )
 
-    return allTeacherIds.map((teacherId) => {
-      const counts = teacherEntriesByTeam[team][teacherId] || createEmptyTeamActivityCounts()
-      return {
-        teacherId,
-        label: getTeacherLabel(teacherId),
-        counts,
-        score: calculateTeamActivityScore(counts),
-        hasInput: Object.values(counts).some((value) => value > 0),
-      }
-    }).sort((a, b) => {
-      if (a.hasInput !== b.hasInput) {
-        return a.hasInput ? -1 : 1
-      }
-      return a.label.localeCompare(b.label, 'ko')
-    })
+    return allTeacherIds
+      .map((teacherId) => {
+        const counts =
+          teacherEntriesByTeam[team][teacherId] ||
+          createEmptyTeamActivityCounts()
+        return {
+          teacherId,
+          label: getTeacherLabel(teacherId),
+          counts,
+          score: calculateTeamActivityScore(counts),
+          hasInput: Object.values(counts).some((value) => value > 0),
+        }
+      })
+      .sort((a, b) => {
+        if (a.hasInput !== b.hasInput) {
+          return a.hasInput ? -1 : 1
+        }
+        return a.label.localeCompare(b.label, 'ko')
+      })
   }
 
   const handleOpenAttendanceDialog = () => {
-    const existingAttendances = attendances?.filter((attendance) =>
-      attendance.date.toISOString().split('T')[0] === selectedDate
-    ) || []
+    const existingAttendances =
+      attendances?.filter(
+        (attendance) =>
+          attendance.date.toISOString().split('T')[0] === selectedDate,
+      ) || []
     const presentStudentIds = new Set(
       existingAttendances
         .filter((attendance) => attendance.status === AttendanceStatus.PRESENT)
-        .map((attendance) => attendance.studentId)
+        .map((attendance) => attendance.studentId),
     )
 
     setSelectedAttendances(presentStudentIds)
@@ -430,18 +489,24 @@ export default function TeamActivityScorePage () {
     if (!user?.churchId) return
 
     try {
-      const existingAttendances = attendances?.filter((attendance) =>
-        attendance.date.toISOString().split('T')[0] === selectedDate
-      ) || []
+      const existingAttendances =
+        attendances?.filter(
+          (attendance) =>
+            attendance.date.toISOString().split('T')[0] === selectedDate,
+        ) || []
 
       for (const student of students) {
         const isPresent = selectedAttendances.has(student.id)
-        const existingAttendance = existingAttendances.find((attendance) => attendance.studentId === student.id)
+        const existingAttendance = existingAttendances.find(
+          (attendance) => attendance.studentId === student.id,
+        )
 
         if (existingAttendance) {
           await updateAttendance(existingAttendance.id, {
             ...existingAttendance,
-            status: isPresent ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
+            status: isPresent
+              ? AttendanceStatus.PRESENT
+              : AttendanceStatus.ABSENT,
           })
           continue
         }
@@ -449,7 +514,9 @@ export default function TeamActivityScorePage () {
         await createAttendance({
           studentId: student.id,
           date: new Date(selectedDate),
-          status: isPresent ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
+          status: isPresent
+            ? AttendanceStatus.PRESENT
+            : AttendanceStatus.ABSENT,
           studentName: student.name,
           teacherId: '',
           teacherName: '',
@@ -478,34 +545,38 @@ export default function TeamActivityScorePage () {
               <Input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={(e) => handleDateChange(e.target.value)}
                 className="w-full max-w-[170px] sm:w-auto"
               />
             </div>
             <div className="flex items-center gap-3 px-3 py-1.5 rounded-md bg-muted/50 border w-fit">
               <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                <input
-                  type="radio"
-                  name="program"
-                  value={Club.SPARKS}
-                  checked={selectedProgram === Club.SPARKS}
-                  onChange={(e) => setSelectedProgram(e.target.value as TeamActivityProgram)}
-                  disabled={isScopedTeacher}
-                  className="w-4 h-4 cursor-pointer accent-primary"
-                />
+                  <input
+                    type="radio"
+                    name="program"
+                    value={Club.SPARKS}
+                    checked={selectedProgram === Club.SPARKS}
+                    onChange={(e) =>
+                      handleProgramChange(e.target.value)
+                    }
+                    disabled={isScopedTeacher}
+                    className="w-4 h-4 cursor-pointer accent-primary"
+                  />
                 <span className="text-sm font-medium">SPARKS</span>
               </label>
               <div className="w-px h-4 bg-border" />
               <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                <input
-                  type="radio"
-                  name="program"
-                  value={Club.TNT}
-                  checked={selectedProgram === Club.TNT}
-                  onChange={(e) => setSelectedProgram(e.target.value as TeamActivityProgram)}
-                  disabled={isScopedTeacher}
-                  className="w-4 h-4 cursor-pointer accent-primary"
-                />
+                  <input
+                    type="radio"
+                    name="program"
+                    value={Club.TNT}
+                    checked={selectedProgram === Club.TNT}
+                    onChange={(e) =>
+                      handleProgramChange(e.target.value)
+                    }
+                    disabled={isScopedTeacher}
+                    className="w-4 h-4 cursor-pointer accent-primary"
+                  />
                 <span className="text-sm font-medium">T&T</span>
               </label>
             </div>
@@ -522,7 +593,8 @@ export default function TeamActivityScorePage () {
       {!hasTeacherAssignment && (
         <Alert variant="destructive">
           <AlertDescription>
-            선생님 계정에 소속 클럽/팀이 설정되지 않았습니다. 설정 화면에서 먼저 지정해주세요.
+            선생님 계정에 소속 클럽/팀이 설정되지 않았습니다. 설정 화면에서 먼저
+            지정해주세요.
           </AlertDescription>
         </Alert>
       )}
@@ -543,16 +615,24 @@ export default function TeamActivityScorePage () {
                       className={`border-2 rounded-lg p-2 ${teamInfo.borderColor} bg-background`}
                     >
                       <div className="flex items-center gap-1.5 mb-1">
-                        <div className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`} />
-                        <h3 className="font-semibold text-xs">{teamInfo.name}</h3>
+                        <div
+                          className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
+                        />
+                        <h3 className="font-semibold text-xs">
+                          {teamInfo.name}
+                        </h3>
                         <Badge
-                          variant={rankings[team] === 1 ? 'default' : 'secondary'}
+                          variant={
+                            rankings[team] === 1 ? 'default' : 'secondary'
+                          }
                           className="text-xs py-0 ml-auto"
                         >
                           {rankings[team]}등
                         </Badge>
                       </div>
-                      <div className="text-xl font-bold">{totalScores[team]}점</div>
+                      <div className="text-xl font-bold">
+                        {totalScores[team]}점
+                      </div>
                     </div>
                   )
                 })}
@@ -570,7 +650,9 @@ export default function TeamActivityScorePage () {
               <Card key={team} className={`border-2 ${teamInfo.borderColor}`}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`} />
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
+                    />
                     {teamInfo.name}팀
                   </CardTitle>
                 </CardHeader>
@@ -581,7 +663,9 @@ export default function TeamActivityScorePage () {
                       className="flex items-center justify-between rounded-md border p-2"
                     >
                       <div>
-                        <div className="text-sm font-medium">{metric.label}</div>
+                        <div className="text-sm font-medium">
+                          {metric.label}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           1명/1회당 {metric.point}점
                         </div>
@@ -614,7 +698,12 @@ export default function TeamActivityScorePage () {
           )}
           <Button
             onClick={handleSave}
-            disabled={isLoading || !isEditing || !hasTeacherAssignment || !canEditCurrentProgram}
+            disabled={
+              isLoading ||
+              !isEditing ||
+              !hasTeacherAssignment ||
+              !canEditCurrentProgram
+            }
           >
             {currentSession ? (
               <>
@@ -644,11 +733,15 @@ export default function TeamActivityScorePage () {
               return (
                 <div key={team} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`} />
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full ${teamInfo.bgColor}`}
+                    />
                     <h3 className="text-sm font-semibold">{teamInfo.name}팀</h3>
                   </div>
                   {rows.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">배정된 선생님이 없습니다.</p>
+                    <p className="text-sm text-muted-foreground">
+                      배정된 선생님이 없습니다.
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {rows.map((row) => (
@@ -659,7 +752,10 @@ export default function TeamActivityScorePage () {
                           <div>
                             <div className="font-medium">{row.label}</div>
                             <div className="text-xs text-muted-foreground">
-                              출석 {row.counts.attendance} / 핸드북 {row.counts.handbook} / 단복 {row.counts.uniform} / 전도 {row.counts.evangelism} / 단원통과 {row.counts.sectionPasses}
+                              출석 {row.counts.attendance} / 핸드북{' '}
+                              {row.counts.handbook} / 단복 {row.counts.uniform}{' '}
+                              / 전도 {row.counts.evangelism} / 단원통과{' '}
+                              {row.counts.sectionPasses}
                             </div>
                           </div>
                           <div className="text-right">
@@ -691,23 +787,28 @@ export default function TeamActivityScorePage () {
       )}
 
       {/* 출결 체크 다이얼로그 */}
-      <Dialog open={attendanceDialogOpen} onOpenChange={setAttendanceDialogOpen}>
+      <Dialog
+        open={attendanceDialogOpen}
+        onOpenChange={setAttendanceDialogOpen}
+      >
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader className="text-center pb-2">
-            <DialogTitle className="text-xl font-bold">📅 출결 체크</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              📅 출결 체크
+            </DialogTitle>
             <DialogDescription className="text-base">
               {selectedDate} 출결 현황
             </DialogDescription>
           </DialogHeader>
 
           <div className="mb-4">
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
-              className="w-full"
-              style={{ colorScheme: 'light dark' }}
-            />
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className="w-full"
+                style={{ colorScheme: 'light dark' }}
+              />
           </div>
 
           <div className="max-h-60 overflow-y-auto space-y-2">
@@ -729,7 +830,9 @@ export default function TeamActivityScorePage () {
                   <span className="font-medium">{student.name}</span>
                   <CheckCircle
                     className={`h-5 w-5 ${
-                      selectedAttendances.has(student.id) ? 'text-primary-foreground' : 'text-muted-foreground'
+                      selectedAttendances.has(student.id)
+                        ? 'text-primary-foreground'
+                        : 'text-muted-foreground'
                     }`}
                   />
                 </div>

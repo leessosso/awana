@@ -1,19 +1,19 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/Button'
 
 interface HeroProps {
-  badge?: string;
-  title: string;
-  subtitle?: string;
+  badge?: string
+  title: string
+  subtitle?: string
   primaryButton?: {
-    text: string;
-    onClick?: () => void;
-  };
+    text: string
+    onClick?: () => void
+  }
   secondaryButton?: {
-    text: string;
-    onClick?: () => void;
-  };
-  backgroundImage?: string;
-  className?: string;
+    text: string
+    onClick?: () => void
+  }
+  backgroundImage?: string
+  className?: string
 }
 
 export function Hero({
@@ -28,11 +28,9 @@ export function Hero({
   const hasBackgroundImage = Boolean(backgroundImage)
   const heroClasses = backgroundImage
     ? `relative bg-cover bg-center bg-no-repeat ${className}`
-    : `bg-gradient-to-br from-blue-50 to-indigo-100 ${className}`;
+    : `bg-gradient-to-br from-blue-50 to-indigo-100 ${className}`
 
-  const overlayClasses = backgroundImage
-    ? 'absolute inset-0 bg-black/50'
-    : '';
+  const overlayClasses = backgroundImage ? 'absolute inset-0 bg-black/50' : ''
 
   return (
     <section className={heroClasses}>
@@ -46,23 +44,29 @@ export function Hero({
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
         <div className="text-center">
           {badge && (
-            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-8 ${
-              hasBackgroundImage
-                ? 'bg-white/20 text-white backdrop-blur-sm'
-                : 'bg-background/80 text-foreground border'
-            }`}>
+            <div
+              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-8 ${
+                hasBackgroundImage
+                  ? 'bg-white/20 text-white backdrop-blur-sm'
+                  : 'bg-background/80 text-foreground border'
+              }`}
+            >
               {badge}
             </div>
           )}
-          <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight ${
-            hasBackgroundImage ? 'text-white' : 'text-foreground'
-          }`}>
+          <h1
+            className={`text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight ${
+              hasBackgroundImage ? 'text-white' : 'text-foreground'
+            }`}
+          >
             {title}
           </h1>
           {subtitle && (
-            <p className={`text-xl sm:text-2xl mb-10 max-w-3xl mx-auto leading-relaxed ${
-              hasBackgroundImage ? 'text-white/90' : 'text-muted-foreground'
-            }`}>
+            <p
+              className={`text-xl sm:text-2xl mb-10 max-w-3xl mx-auto leading-relaxed ${
+                hasBackgroundImage ? 'text-white/90' : 'text-muted-foreground'
+              }`}
+            >
               {subtitle}
             </p>
           )}
@@ -91,5 +95,5 @@ export function Hero({
         </div>
       </div>
     </section>
-  );
+  )
 }

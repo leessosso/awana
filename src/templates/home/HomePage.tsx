@@ -13,4 +13,3 @@ export function HomePage() {
     </div>
   )
 }
-

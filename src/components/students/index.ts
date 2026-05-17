@@ -1,2 +1,1 @@
-export { StudentCard } from './StudentCard';
-
+export { StudentCard } from './StudentCard'

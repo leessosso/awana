@@ -23,8 +23,8 @@ import {
 
 const navItems = [
   { to: '/dashboard', label: '대시보드' },
-  { to: '/attendance', label: '출석 관리' },
   { to: '/students', label: '학생 관리' },
+  { to: '/attendance', label: '출석 관리' },
   { to: '/handbook', label: '핸드북' },
   { to: '/game-time', label: '게임시간', end: true },
   { to: '/team-activity-score', label: '팀활동 점수' },
@@ -56,8 +56,11 @@ export function Navigation() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border/5 bg-background/90 backdrop-blur">
-        <div className="container-section flex h-16 items-center justify-between">
-          <NavLink to="/handbook" className="text-lg font-semibold text-foreground">
+        <div className="container mx-auto w-full px-4 sm:px-6 lg:px-8 max-w-[1280px] flex h-16 items-center justify-between">
+          <NavLink
+            to="/handbook"
+            className="text-lg font-semibold text-foreground"
+          >
             AWANA LMS
           </NavLink>
 
@@ -105,7 +108,9 @@ export function Navigation() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.displayName}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user?.displayName}
+                    </p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user?.loginId || user?.email}
                     </p>
@@ -139,7 +144,10 @@ export function Navigation() {
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive"
+                >
                   로그아웃
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -173,8 +181,12 @@ export function Navigation() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="text-sm font-medium">{user.displayName}님</div>
-                      <div className="text-xs text-muted-foreground">{user.churchName}</div>
+                      <div className="text-sm font-medium">
+                        {user.displayName}님
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {user.churchName}
+                      </div>
                     </div>
                   </div>
                 </div>

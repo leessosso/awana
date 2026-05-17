@@ -20,101 +20,130 @@ import GameTimeRevealPage from '../pages/game-time/GameTimeRevealPage'
 import TeamActivityScorePage from '../pages/team-activity/TeamActivityScorePage'
 import SettingsPage from '../pages/SettingsPage'
 import NotFoundPage from '../pages/NotFoundPage'
+import ErrorPage from '../pages/ErrorPage'
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/'
+import {
+  studentsLoader,
+  dashboardLoader,
+  attendanceLoader,
+  gameTimeLoader,
+  teamActivityScoreLoader,
+  studentProgressReportLoader,
+  churchStatisticsLoader,
+  studentHandbookDetailLoader,
+  handbookLoader,
+  gameTimeRevealLoader
+} from '../loaders'
 
-export const router = createBrowserRouter([
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/signup',
-    element: <SignUpPage />,
-  },
-  {
-    path: '/',
-    element: <App />,
-    children: [
-      {
-        index: true,
-        element: <TeamActivityScorePage />,
-      },
-      {
-        path: 'dashboard',
-        element: <DashboardPage />,
-      },
-      {
-        path: 'service',
-        element: <ServicePage />,
-      },
-      {
-        path: 'product',
-        element: <ProductPage />,
-      },
-      {
-        path: 'portfolio',
-        element: <PortfolioPage />,
-      },
-      {
-        path: 'analytics',
-        element: <AnalyticsPage />,
-      },
-      {
-        path: 'students',
-        element: <StudentsPage />,
-      },
-      {
-        path: 'attendance',
-        element: <AttendancePage />,
-      },
-      {
-        path: 'handbook',
-        element: <HandbookPage />,
-      },
-      {
-        path: 'handbook/:studentId',
-        element: <StudentHandbookDetailPage />,
-      },
-      {
-        path: 'reports',
-        element: <ReportsPage />,
-      },
-      {
-        path: 'reports/student-progress',
-        element: <StudentProgressReportPage />,
-      },
-      {
-        path: 'reports/student-progress/:studentId',
-        element: <StudentProgressReportPage />,
-      },
-      {
-        path: 'reports/church-statistics',
-        element: <ChurchStatisticsPage />,
-      },
-      {
-        path: 'game-time',
-        element: <GameTimePage />,
-      },
-      {
-        path: 'game-time/reveal',
-        element: <GameTimeRevealPage />,
-      },
-      {
-        path: 'team-activity-score',
-        element: <TeamActivityScorePage />,
-      },
-      {
-        path: 'settings',
-        element: <SettingsPage />,
-      },
-      {
-        path: '*',
-        element: <NotFoundPage />,
-      },
-    ],
-  },
-], {
-  basename: basePath.endsWith('/') ? basePath.slice(0, -1) : basePath,
-})
+const basePath = import.meta.env.VITE_BASE_PATH || (import.meta.env.DEV ? '/' : '/awana/')
 
+export const router = createBrowserRouter(
+  [
+    {
+      path: '/login',
+      element: <LoginPage />,
+    },
+    {
+      path: '/signup',
+      element: <SignUpPage />,
+    },
+    {
+      path: '/',
+      element: <App />,
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          index: true,
+          element: <TeamActivityScorePage />,
+          loader: teamActivityScoreLoader,
+        },
+        {
+          path: 'dashboard',
+          element: <DashboardPage />,
+          loader: dashboardLoader,
+        },
+        {
+          path: 'service',
+          element: <ServicePage />,
+        },
+        {
+          path: 'product',
+          element: <ProductPage />,
+        },
+        {
+          path: 'portfolio',
+          element: <PortfolioPage />,
+        },
+        {
+          path: 'analytics',
+          element: <AnalyticsPage />,
+        },
+        {
+          path: 'students',
+          element: <StudentsPage />,
+          loader: studentsLoader,
+        },
+        {
+          path: 'attendance',
+          element: <AttendancePage />,
+          loader: attendanceLoader,
+        },
+        {
+          path: 'handbook',
+          element: <HandbookPage />,
+          loader: handbookLoader,
+        },
+        {
+          path: 'handbook/:studentId',
+          element: <StudentHandbookDetailPage />,
+          loader: studentHandbookDetailLoader,
+        },
+        {
+          path: 'reports',
+          element: <ReportsPage />,
+        },
+        {
+          path: 'reports/student-progress',
+          element: <StudentProgressReportPage />,
+          loader: studentProgressReportLoader,
+        },
+        {
+          path: 'reports/student-progress/:studentId',
+          element: <StudentProgressReportPage />,
+          loader: studentProgressReportLoader,
+        },
+        {
+          path: 'reports/church-statistics',
+          element: <ChurchStatisticsPage />,
+          loader: churchStatisticsLoader,
+        },
+        {
+          path: 'game-time',
+          element: <GameTimePage />,
+          loader: gameTimeLoader,
+        },
+        {
+          path: 'game-time/reveal',
+          element: <GameTimeRevealPage />,
+          loader: gameTimeRevealLoader,
+        },
+        {
+          path: 'team-activity-score',
+          element: <TeamActivityScorePage />,
+          loader: teamActivityScoreLoader,
+        },
+        {
+          path: 'settings',
+          element: <SettingsPage />,
+        },
+        {
+          path: '*',
+          element: <NotFoundPage />,
+        },
+      ],
+    },
+  ],
+  {
+    basename: basePath.endsWith('/') ? basePath.slice(0, -1) : basePath,
+  },
+)

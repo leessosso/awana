@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { useAuthStore } from './authStore'
-import { teamActivityScoreService } from '../services/teamActivityScoreService'
+import * as teamActivityScoreService from '../services/teamActivityScoreService'
 import { UserRole } from '../models/User'
 import type {
   TeamActivityCounts,
@@ -14,154 +14,183 @@ interface TeamActivityScoreState {
   currentSession: TeamActivitySession | null
   isLoading: boolean
   error: string | null
-  fetchTeamActivitySession: (date: Date, program: TeamActivityProgram) => Promise<void>
-  createTeamActivitySession: (sessionData: TeamActivitySessionFormData) => Promise<void>
+  fetchTeamActivitySession: (
+    date: Date,
+    program: TeamActivityProgram,
+  ) => Promise<void>
+  createTeamActivitySession: (
+    sessionData: TeamActivitySessionFormData,
+  ) => Promise<void>
   updateTeamActivitySession: (
     sessionId: string,
-    sessionData: Partial<TeamActivitySessionFormData>
+    sessionData: Partial<TeamActivitySessionFormData>,
   ) => Promise<void>
   updateTeacherTeamCounts: (
     sessionId: string,
     team: TeamKey,
     teacherId: string,
-    counts: TeamActivityCounts
+    counts: TeamActivityCounts,
   ) => Promise<void>
   deleteTeamActivitySession: (sessionId: string) => Promise<void>
   clearError: () => void
 }
 
-export const useTeamActivityScoreStore = create<TeamActivityScoreState>((set, get) => ({
-  currentSession: null,
-  isLoading: false,
-  error: null,
+export const useTeamActivityScoreStore = create<TeamActivityScoreState>(
+  (set, get) => ({
+    currentSession: null,
+    isLoading: false,
+    error: null,
 
-  fetchTeamActivitySession: async (date: Date, program: TeamActivityProgram) => {
-    const { user } = useAuthStore.getState()
-    if (!user?.churchId) {
-      set({ error: '교회 정보가 없습니다.', isLoading: false })
-      return
-    }
+    fetchTeamActivitySession: async (
+      date: Date,
+      program: TeamActivityProgram,
+    ) => {
+      const { user } = useAuthStore.getState()
+      if (!user?.churchId) {
+        set({ error: '교회 정보가 없습니다.', isLoading: false })
+        return
+      }
 
-    set({ isLoading: true, error: null })
-    try {
-      const session = await teamActivityScoreService.getTeamActivitySessionByDate(
-        date,
-        user.churchId,
-        program
-      )
-      set({ currentSession: session, isLoading: false })
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : '팀 활동 점수를 불러오는데 실패했습니다.',
-        isLoading: false,
-      })
-    }
-  },
+      set({ isLoading: true, error: null })
+      try {
+        const session =
+          await teamActivityScoreService.getTeamActivitySessionByDate(
+            date,
+            user.churchId,
+            program,
+          )
+        set({ currentSession: session, isLoading: false })
+      } catch (error) {
+        set({
+          error:
+            error instanceof Error
+              ? error.message
+              : '팀 활동 점수를 불러오는데 실패했습니다.',
+          isLoading: false,
+        })
+      }
+    },
 
-  createTeamActivitySession: async (sessionData: TeamActivitySessionFormData) => {
-    const { user } = useAuthStore.getState()
-    if (!user?.uid || !user?.churchId) {
-      throw new Error('인증 정보가 없습니다.')
-    }
+    createTeamActivitySession: async (
+      sessionData: TeamActivitySessionFormData,
+    ) => {
+      const { user } = useAuthStore.getState()
+      if (!user?.uid || !user?.churchId) {
+        throw new Error('인증 정보가 없습니다.')
+      }
 
-    set({ isLoading: true, error: null })
-    try {
-      await teamActivityScoreService.createTeamActivitySession(
-        sessionData,
-        user.uid,
-        user.churchId
-      )
-      await get().fetchTeamActivitySession(sessionData.date, sessionData.program)
-      set({ isLoading: false })
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : '팀 활동 점수 등록에 실패했습니다.',
-        isLoading: false,
-      })
-      throw error
-    }
-  },
+      set({ isLoading: true, error: null })
+      try {
+        await teamActivityScoreService.createTeamActivitySession(
+          sessionData,
+          user.uid,
+          user.churchId,
+        )
+        await get().fetchTeamActivitySession(
+          sessionData.date,
+          sessionData.program,
+        )
+        set({ isLoading: false })
+      } catch (error) {
+        set({
+          error:
+            error instanceof Error
+              ? error.message
+              : '팀 활동 점수 등록에 실패했습니다.',
+          isLoading: false,
+        })
+        throw error
+      }
+    },
 
-  updateTeamActivitySession: async (
-    sessionId: string,
-    sessionData: Partial<TeamActivitySessionFormData>
-  ) => {
-    set({ isLoading: true, error: null })
-    try {
-      await teamActivityScoreService.updateTeamActivitySession(sessionId, sessionData)
-      const date = sessionData.date || get().currentSession?.date || new Date()
-      const program = sessionData.program || get().currentSession?.program || 'Sparks'
-      await get().fetchTeamActivitySession(date, program as TeamActivityProgram)
-      set({ isLoading: false })
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : '팀 활동 점수 수정에 실패했습니다.',
-        isLoading: false,
-      })
-      throw error
-    }
-  },
+    updateTeamActivitySession: async (
+      sessionId: string,
+      sessionData: Partial<TeamActivitySessionFormData>,
+    ) => {
+      set({ isLoading: true, error: null })
+      try {
+        await teamActivityScoreService.updateTeamActivitySession(
+          sessionId,
+          sessionData,
+        )
+        const date =
+          sessionData.date || get().currentSession?.date || new Date()
+        const program =
+          sessionData.program || get().currentSession?.program || 'Sparks'
+        await get().fetchTeamActivitySession(
+          date,
+          program as TeamActivityProgram,
+        )
+        set({ isLoading: false })
+      } catch (error) {
+        set({
+          error:
+            error instanceof Error
+              ? error.message
+              : '팀 활동 점수 수정에 실패했습니다.',
+          isLoading: false,
+        })
+        throw error
+      }
+    },
 
-  updateTeacherTeamCounts: async (
-    sessionId: string,
-    team: TeamKey,
-    teacherId: string,
-    counts: TeamActivityCounts
-  ) => {
-    const session = get().currentSession
-    if (!session) {
-      throw new Error('팀 활동 점수 세션을 찾을 수 없습니다.')
-    }
+    updateTeacherTeamCounts: async (
+      sessionId: string,
+      team: TeamKey,
+      teacherId: string,
+      counts: TeamActivityCounts,
+    ) => {
+      const session = get().currentSession
+      if (!session) {
+        throw new Error('팀 활동 점수 세션을 찾을 수 없습니다.')
+      }
 
-    set({ isLoading: true, error: null })
-    try {
-      await teamActivityScoreService.updateTeacherTeamCounts(sessionId, team, teacherId, counts)
-      await get().fetchTeamActivitySession(session.date, session.program)
-      set({ isLoading: false })
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : '선생님별 팀 활동 점수 수정에 실패했습니다.',
-        isLoading: false,
-      })
-      throw error
-    }
-  },
+      set({ isLoading: true, error: null })
+      try {
+        await teamActivityScoreService.updateTeacherTeamCounts(
+          sessionId,
+          team,
+          teacherId,
+          counts,
+        )
+        await get().fetchTeamActivitySession(session.date, session.program)
+        set({ isLoading: false })
+      } catch (error) {
+        set({
+          error:
+            error instanceof Error
+              ? error.message
+              : '선생님별 팀 활동 점수 수정에 실패했습니다.',
+          isLoading: false,
+        })
+        throw error
+      }
+    },
 
-  deleteTeamActivitySession: async (sessionId: string) => {
-    const { user } = useAuthStore.getState()
-    if (user?.role !== UserRole.ADMIN) {
-      const errorMessage = '팀 활동 점수 삭제는 관리자만 가능합니다.'
-      set({ error: errorMessage, isLoading: false })
-      throw new Error(errorMessage)
-    }
+    deleteTeamActivitySession: async (sessionId: string) => {
+      const { user } = useAuthStore.getState()
+      if (user?.role !== UserRole.ADMIN) {
+        const errorMessage = '팀 활동 점수 삭제는 관리자만 가능합니다.'
+        set({ error: errorMessage, isLoading: false })
+        throw new Error(errorMessage)
+      }
 
-    set({ isLoading: true, error: null })
-    try {
-      await teamActivityScoreService.deleteTeamActivitySession(sessionId)
-      set({ currentSession: null, isLoading: false })
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : '팀 활동 점수 삭제에 실패했습니다.',
-        isLoading: false,
-      })
-      throw error
-    }
-  },
+      set({ isLoading: true, error: null })
+      try {
+        await teamActivityScoreService.deleteTeamActivitySession(sessionId)
+        set({ currentSession: null, isLoading: false })
+      } catch (error) {
+        set({
+          error:
+            error instanceof Error
+              ? error.message
+              : '팀 활동 점수 삭제에 실패했습니다.',
+          isLoading: false,
+        })
+        throw error
+      }
+    },
 
-  clearError: () => set({ error: null }),
-}))
+    clearError: () => set({ error: null }),
+  }),
+)

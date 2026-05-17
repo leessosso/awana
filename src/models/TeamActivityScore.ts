@@ -14,7 +14,10 @@ export interface TeamActivityCounts {
 
 export type TeamActivityCountsByTeam = Record<TeamKey, TeamActivityCounts>
 export type TeamActivityTeacherEntries = Record<string, TeamActivityCounts>
-export type TeamActivityTeacherEntriesByTeam = Record<TeamKey, TeamActivityTeacherEntries>
+export type TeamActivityTeacherEntriesByTeam = Record<
+  TeamKey,
+  TeamActivityTeacherEntries
+>
 
 export interface TeamActivitySession {
   id: string
@@ -45,7 +48,7 @@ export const teamActivityScoreRules = {
   sectionPasses: 100,
 } as const
 
-export function createEmptyTeamActivityCounts (): TeamActivityCounts {
+export function createEmptyTeamActivityCounts(): TeamActivityCounts {
   return {
     attendance: 0,
     handbook: 0,
@@ -55,7 +58,7 @@ export function createEmptyTeamActivityCounts (): TeamActivityCounts {
   }
 }
 
-export function createEmptyCountsByTeam (): TeamActivityCountsByTeam {
+export function createEmptyCountsByTeam(): TeamActivityCountsByTeam {
   return {
     red: createEmptyTeamActivityCounts(),
     yellow: createEmptyTeamActivityCounts(),
@@ -64,7 +67,7 @@ export function createEmptyCountsByTeam (): TeamActivityCountsByTeam {
   }
 }
 
-export function createEmptyTeacherEntriesByTeam (): TeamActivityTeacherEntriesByTeam {
+export function createEmptyTeacherEntriesByTeam(): TeamActivityTeacherEntriesByTeam {
   return {
     red: {},
     yellow: {},
@@ -73,7 +76,7 @@ export function createEmptyTeacherEntriesByTeam (): TeamActivityTeacherEntriesBy
   }
 }
 
-export function sumTeamActivityCounts (
+export function sumTeamActivityCounts(
   ...countsList: TeamActivityCounts[]
 ): TeamActivityCounts {
   return countsList.reduce(
@@ -84,24 +87,26 @@ export function sumTeamActivityCounts (
       evangelism: sum.evangelism + counts.evangelism,
       sectionPasses: sum.sectionPasses + counts.sectionPasses,
     }),
-    createEmptyTeamActivityCounts()
+    createEmptyTeamActivityCounts(),
   )
 }
 
-export function calculateCountsByTeamFromTeacherEntries (
-  teacherEntriesByTeam: TeamActivityTeacherEntriesByTeam
+export function calculateCountsByTeamFromTeacherEntries(
+  teacherEntriesByTeam: TeamActivityTeacherEntriesByTeam,
 ): TeamActivityCountsByTeam {
   return {
     red: sumTeamActivityCounts(...Object.values(teacherEntriesByTeam.red)),
-    yellow: sumTeamActivityCounts(...Object.values(teacherEntriesByTeam.yellow)),
+    yellow: sumTeamActivityCounts(
+      ...Object.values(teacherEntriesByTeam.yellow),
+    ),
     blue: sumTeamActivityCounts(...Object.values(teacherEntriesByTeam.blue)),
     green: sumTeamActivityCounts(...Object.values(teacherEntriesByTeam.green)),
   }
 }
 
-export function createTeacherEntriesByTeamFromCounts (
+export function createTeacherEntriesByTeamFromCounts(
   countsByTeam: TeamActivityCountsByTeam,
-  defaultTeacherId = legacyTeacherEntryId
+  defaultTeacherId = legacyTeacherEntryId,
 ): TeamActivityTeacherEntriesByTeam {
   return {
     red: { [defaultTeacherId]: { ...countsByTeam.red } },
@@ -111,7 +116,7 @@ export function createTeacherEntriesByTeamFromCounts (
   }
 }
 
-export function normalizeTeamActivitySessionData (data: {
+export function normalizeTeamActivitySessionData(data: {
   countsByTeam?: TeamActivityCountsByTeam
   teacherEntriesByTeam?: TeamActivityTeacherEntriesByTeam
 }): {
@@ -121,7 +126,9 @@ export function normalizeTeamActivitySessionData (data: {
   if (data.teacherEntriesByTeam) {
     return {
       teacherEntriesByTeam: data.teacherEntriesByTeam,
-      countsByTeam: calculateCountsByTeamFromTeacherEntries(data.teacherEntriesByTeam),
+      countsByTeam: calculateCountsByTeamFromTeacherEntries(
+        data.teacherEntriesByTeam,
+      ),
     }
   }
 
@@ -132,7 +139,7 @@ export function normalizeTeamActivitySessionData (data: {
   }
 }
 
-export function calculateTeamActivityScore (counts: TeamActivityCounts): number {
+export function calculateTeamActivityScore(counts: TeamActivityCounts): number {
   return (
     counts.attendance * teamActivityScoreRules.attendance +
     counts.handbook * teamActivityScoreRules.handbook +
@@ -142,8 +149,8 @@ export function calculateTeamActivityScore (counts: TeamActivityCounts): number 
   )
 }
 
-export function calculateTeamActivityTotalScores (
-  countsByTeam: TeamActivityCountsByTeam
+export function calculateTeamActivityTotalScores(
+  countsByTeam: TeamActivityCountsByTeam,
 ): Record<TeamKey, number> {
   return {
     red: calculateTeamActivityScore(countsByTeam.red),
